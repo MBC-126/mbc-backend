@@ -1,0 +1,93 @@
+{
+  "kind": "collectionType",
+  "collectionName": "announcements",
+  "info": {
+    "singularName": "announcement",
+    "pluralName": "announcements",
+    "displayName": "Announcement",
+    "description": "Marketplace pour vente/achat entre militaires"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "seller": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "announcements"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true
+    },
+    "price": {
+      "type": "string",
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "Véhicule",
+        "Immobilier",
+        "Mobilier",
+        "Électronique",
+        "Autre"
+      ]
+    },
+    "etat": {
+      "type": "enumeration",
+      "default": "disponible",
+      "enum": [
+        "disponible",
+        "vendue",
+        "supprimée"
+      ]
+    },
+    "images": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "location": {
+      "type": "string"
+    },
+    "contactInfo": {
+      "type": "string"
+    },
+    "isNegotiable": {
+      "type": "boolean",
+      "default": false
+    },
+    "viewCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "soldAt": {
+      "type": "datetime"
+    },
+    "expirationDate": {
+      "type": "datetime"
+    },
+    "reportStatus": {
+      "type": "enumeration",
+      "enum": [
+        "none",
+        "reported",
+        "approved",
+        "rejected"
+      ],
+      "default": "none"
+    }
+  }
+}

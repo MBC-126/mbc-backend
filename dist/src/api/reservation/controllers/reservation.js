@@ -1,0 +1,382 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const strapi_1 = require("@strapi/strapi");
+const booking_validator_1 = require("../../../services/booking-validator");
+exports.default = strapi_1.factories.createCoreController('api::reservation.reservation', ({ strapi }) => ({
+    async checkAvailability(ctx) {
+        const { infrastructureId, startTime, endTime } = ctx.query;
+        if (!infrastructureId || !startTime || !endTime) {
+            return ctx.badRequest('Paramètres manquants: infrastructureId, startTime, endTime');
+        }
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const conflicts = await strapi.db.query('api::reservation.reservation').findMany({
+            where: {
+                infrastructure: infrastructureId,
+                etatReservation: { $ne: 'cancelled' },
+                $or: [
+                    {
+                        startTime: { $lte: start },
+                        endTime: { $gt: start }
+                    },
+                    {
+                        startTime: { $lt: end },
+                        endTime: { $gte: end }
+                    },
+                    {
+                        startTime: { $gte: start },
+                        endTime: { $lte: end }
+                    }
+                ]
+            },
+            populate: ['user']
+        });
+        return {
+            available: conflicts.length === 0,
+            conflicts: conflicts.map((r) => {
+                var _a;
+                return ({
+                    id: r.id,
+                    startTime: r.startTime,
+                    endTime: r.endTime,
+                    user: (_a = r.user) === null || _a === void 0 ? void 0 : _a.username
+                });
+            })
+        };
+    },
+    async create(ctx) {
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('Vous devez être connecté');
+        }
+        // Vérifier que l'utilisateur n'a pas déjà 2 réservations actives
+        const userActiveReservations = await strapi.db.query('api::reservation.reservation').count({
+            where: {
+                user: user.id,
+                etatReservation: { $in: ['pending', 'confirmed'] }
+            }
+        });
+        if (userActiveReservations >= 2) {
+            return ctx.badRequest('Vous avez atteint le maximum de 2 créneaux réservables simultanément');
+        }
+        const { infrastructure, startTime, endTime, notes } = ctx.request.body.data;
+        // Récupérer l'infrastructure avec ses règles
+        const infra = await strapi.db.query('api::infrastructure.infrastructure').findOne({
+            where: { id: infrastructure },
+            populate: ['bookingRules', 'managers']
+        });
+        if (!infra) {
+            return ctx.badRequest('Infrastructure introuvable');
+        }
+        // Validation avancée si bookingRules existe
+        if (infra.bookingRules) {
+            const validation = await (0, booking_validator_1.validateBooking)(infra, new Date(startTime), new Date(endTime), user.id);
+            if (!validation.valid) {
+                return ctx.badRequest(validation.errors.map((e) => e.message).join(', '));
+            }
+        }
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const conflicts = await strapi.db.query('api::reservation.reservation').findMany({
+            where: {
+                infrastructure,
+                etatReservation: { $in: ['pending', 'confirmed'] },
+                $or: [
+                    {
+                        startTime: { $lte: start },
+                        endTime: { $gt: start }
+                    },
+                    {
+                        startTime: { $lt: end },
+                        endTime: { $gte: end }
+                    },
+                    {
+                        startTime: { $gte: start },
+                        endTime: { $lte: end }
+                    }
+                ]
+            }
+        });
+        if (conflicts.length > 0) {
+            return ctx.badRequest('Ce créneau est déjà réservé');
+        }
+        // En Strapi V5, on utilise id pour les relations
+        ctx.request.body.data.user = user.id;
+        ctx.request.body.data.etatReservation = 'pending';
+        const response = await super.create(ctx);
+        // Envoyer notification aux managers si bookingRules activé
+        if (infra.bookingRules && infra.managers && infra.managers.length > 0) {
+            const { getFCMService } = require('../../../services/fcm');
+            const fcm = getFCMService();
+            // Récupérer les tokens des managers
+            const managerIds = infra.managers.map((m) => m.id);
+            const tokens = await strapi.db.query('api::device-token.device-token').findMany({
+                where: {
+                    user_id: { $in: managerIds },
+                    enabled: true
+                }
+            });
+            if (tokens.length > 0) {
+                await fcm.sendPushToTokens(tokens.map((t) => t.token), {
+                    title: 'Nouvelle réservation en attente',
+                    body: `${user.firstName} ${user.lastName} souhaite réserver ${infra.name}`,
+                    data: {
+                        screen: 'ManagerInbox',
+                        infrastructureId: infrastructure.toString(),
+                        reservationId: response.data.id.toString(),
+                        type: 'reservation_pending'
+                    }
+                });
+            }
+        }
+        return response;
+    },
+    /**
+     * Approuver une réservation (Manager only)
+     */
+    async approve(ctx) {
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('Vous devez être connecté');
+        }
+        const { id } = ctx.params;
+        // Récupérer la réservation
+        const reservation = await strapi.db.query('api::reservation.reservation').findOne({
+            where: { id },
+            populate: ['infrastructure', 'user']
+        });
+        if (!reservation) {
+            return ctx.notFound('Réservation introuvable');
+        }
+        if (reservation.etatReservation !== 'pending') {
+            return ctx.badRequest('Cette réservation ne peut plus être approuvée');
+        }
+        // Vérifier que l'utilisateur est manager (déjà fait par policy)
+        // Mettre à jour le statut
+        await strapi.db.query('api::reservation.reservation').update({
+            where: { id },
+            data: { etatReservation: 'confirmed' }
+        });
+        // Envoyer notification au demandeur
+        const { getFCMService } = require('../../../services/fcm');
+        const fcm = getFCMService();
+        const tokens = await strapi.db.query('api::device-token.device-token').findMany({
+            where: {
+                user_id: reservation.user.id,
+                enabled: true
+            }
+        });
+        if (tokens.length > 0) {
+            await fcm.sendPushToTokens(tokens.map((t) => t.token), {
+                title: 'Réservation confirmée',
+                body: `Votre réservation de ${reservation.infrastructure.name} a été confirmée`,
+                data: {
+                    screen: 'BookingDetails',
+                    reservationId: id.toString(),
+                    type: 'reservation_confirmed'
+                }
+            });
+        }
+        return ctx.send({ data: { id, etatReservation: 'confirmed' } });
+    },
+    /**
+     * Rejeter une réservation (Manager only)
+     */
+    async reject(ctx) {
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('Vous devez être connecté');
+        }
+        const { id } = ctx.params;
+        const { rejection_reason } = ctx.request.body;
+        if (!rejection_reason) {
+            return ctx.badRequest('Raison du rejet requise');
+        }
+        // Récupérer la réservation
+        const reservation = await strapi.db.query('api::reservation.reservation').findOne({
+            where: { id },
+            populate: ['infrastructure', 'user']
+        });
+        if (!reservation) {
+            return ctx.notFound('Réservation introuvable');
+        }
+        if (reservation.etatReservation !== 'pending') {
+            return ctx.badRequest('Cette réservation ne peut plus être rejetée');
+        }
+        // Mettre à jour le statut
+        await strapi.db.query('api::reservation.reservation').update({
+            where: { id },
+            data: {
+                etatReservation: 'rejected',
+                rejection_reason
+            }
+        });
+        // Envoyer notification au demandeur
+        const { getFCMService } = require('../../../services/fcm');
+        const fcm = getFCMService();
+        const tokens = await strapi.db.query('api::device-token.device-token').findMany({
+            where: {
+                user_id: reservation.user.id,
+                enabled: true
+            }
+        });
+        if (tokens.length > 0) {
+            await fcm.sendPushToTokens(tokens.map((t) => t.token), {
+                title: 'Réservation refusée',
+                body: `Votre réservation de ${reservation.infrastructure.name} a été refusée: ${rejection_reason}`,
+                data: {
+                    screen: 'BookingDetails',
+                    reservationId: id.toString(),
+                    type: 'reservation_rejected'
+                }
+            });
+        }
+        return ctx.send({ data: { id, etatReservation: 'rejected', rejection_reason } });
+    },
+    /**
+     * Annuler une réservation (Requester ou Manager)
+     */
+    async cancel(ctx) {
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('Vous devez être connecté');
+        }
+        const { id } = ctx.params;
+        // Récupérer la réservation
+        const reservation = await strapi.db.query('api::reservation.reservation').findOne({
+            where: { id },
+            populate: ['infrastructure', 'user']
+        });
+        if (!reservation) {
+            return ctx.notFound('Réservation introuvable');
+        }
+        if (reservation.etatReservation === 'cancelled') {
+            return ctx.badRequest('Cette réservation est déjà annulée');
+        }
+        // Vérifier droits (déjà fait par policy is-requester-or-manager)
+        // Mettre à jour le statut
+        await strapi.db.query('api::reservation.reservation').update({
+            where: { id },
+            data: { etatReservation: 'cancelled' }
+        });
+        // Envoyer notification à l'autre partie
+        const { getFCMService } = require('../../../services/fcm');
+        const fcm = getFCMService();
+        const isRequester = reservation.user.id === user.id;
+        if (isRequester) {
+            // Notifier les managers
+            const infra = await strapi.db.query('api::infrastructure.infrastructure').findOne({
+                where: { id: reservation.infrastructure.id },
+                populate: ['managers']
+            });
+            if (infra && infra.managers && infra.managers.length > 0) {
+                const managerIds = infra.managers.map((m) => m.id);
+                const tokens = await strapi.db.query('api::device-token.device-token').findMany({
+                    where: {
+                        user_id: { $in: managerIds },
+                        enabled: true
+                    }
+                });
+                if (tokens.length > 0) {
+                    await fcm.sendPushToTokens(tokens.map((t) => t.token), {
+                        title: 'Réservation annulée',
+                        body: `${user.firstName} ${user.lastName} a annulé sa réservation de ${infra.name}`,
+                        data: {
+                            screen: 'ManagerInbox',
+                            infrastructureId: reservation.infrastructure.id.toString(),
+                            reservationId: id.toString(),
+                            type: 'reservation_cancelled'
+                        }
+                    });
+                }
+            }
+        }
+        else {
+            // Notifier le demandeur
+            const tokens = await strapi.db.query('api::device-token.device-token').findMany({
+                where: {
+                    user_id: reservation.user.id,
+                    enabled: true
+                }
+            });
+            if (tokens.length > 0) {
+                await fcm.sendPushToTokens(tokens.map((t) => t.token), {
+                    title: 'Réservation annulée',
+                    body: `Votre réservation de ${reservation.infrastructure.name} a été annulée par un gestionnaire`,
+                    data: {
+                        screen: 'BookingDetails',
+                        reservationId: id.toString(),
+                        type: 'reservation_cancelled'
+                    }
+                });
+            }
+        }
+        return ctx.send({ data: { id, etatReservation: 'cancelled' } });
+    },
+    /**
+     * Récupérer les réservations de demain (pour n8n)
+     */
+    async findTomorrow(ctx) {
+        try {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const dayAfterTomorrow = new Date(tomorrow);
+            dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+            // Trouver les réservations confirmées pour demain
+            const tomorrowReservations = await strapi.db.query('api::reservation.reservation').findMany({
+                where: {
+                    etatReservation: 'confirmed',
+                    startTime: {
+                        $gte: tomorrow.toISOString(),
+                        $lt: dayAfterTomorrow.toISOString()
+                    }
+                },
+                populate: {
+                    user: {
+                        select: ['id', 'firstName', 'fcmToken']
+                    },
+                    infrastructure: {
+                        select: ['id', 'name']
+                    }
+                }
+            });
+            ctx.body = tomorrowReservations;
+        }
+        catch (err) {
+            console.error('❌ Erreur findTomorrow:', err);
+            ctx.throw(500, err);
+        }
+    },
+    async delete(ctx) {
+        var _a, _b;
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('Vous devez être connecté');
+        }
+        const { id } = ctx.params;
+        console.log(`🗑️ Tentative de suppression réservation ID: ${id} par user ID: ${user.id}`);
+        // Récupérer la réservation pour vérifier qu'elle appartient à l'utilisateur
+        const reservation = await strapi.db.query('api::reservation.reservation').findOne({
+            where: { id },
+            populate: ['user']
+        });
+        if (!reservation) {
+            console.log(`❌ Réservation ${id} introuvable`);
+            return ctx.notFound('Réservation introuvable');
+        }
+        console.log(`📋 Réservation trouvée - Owner: ${(_a = reservation.user) === null || _a === void 0 ? void 0 : _a.id}`);
+        // Vérifier que l'utilisateur est bien le propriétaire de la réservation
+        if (((_b = reservation.user) === null || _b === void 0 ? void 0 : _b.id) !== user.id) {
+            console.log(`❌ User ${user.id} n'est pas le propriétaire de la réservation ${id}`);
+            return ctx.forbidden('Vous ne pouvez pas supprimer cette réservation');
+        }
+        // Supprimer la réservation directement via la query
+        console.log(`✅ Suppression de la réservation ${id}`);
+        await strapi.db.query('api::reservation.reservation').delete({
+            where: { id }
+        });
+        console.log(`✅ Réservation ${id} supprimée avec succès`);
+        return ctx.send({ data: null }, 200);
+    }
+}));

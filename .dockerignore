@@ -1,0 +1,6 @@
+# /mbc-backend/.dockerignore
+
+.cache/
+build/
+node_modules/
+.env

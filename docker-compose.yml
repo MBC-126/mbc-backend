@@ -1,0 +1,67 @@
+# /mbc-backend/docker-compose.yml
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mbc-postgres            # ← nom unique, pas "postgres"
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    restart: unless-stopped
+    # IMPORTANT : pas d'app-net ici → évite le clash de nom "postgres" sur app-net
+
+  strapi:
+    build: .
+    image: mabase-strapi-dev-image
+    container_name: strapi
+    environment:
+      NODE_ENV: development
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_HOST: mbc-postgres          # ← pointe explicitement vers SON Postgres
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      APP_KEYS: ${APP_KEYS}
+      API_TOKEN_SALT: ${API_TOKEN_SALT}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      PROCONNECT_CLIENT_ID: ${PROCONNECT_CLIENT_ID}
+      PROCONNECT_CLIENT_SECRET: ${PROCONNECT_CLIENT_SECRET}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET}
+      N8N_API_SECRET: ${N8N_API_SECRET}
+    volumes:
+      - ./config:/opt/app/config
+      - ./src:/opt/app/src
+      - ./dist:/opt/app/dist
+      - ./package.json:/opt/app/package.json
+      - ./yarn.lock:/opt/app/yarn.lock
+      - ./public/uploads:/opt/app/public/uploads
+    ports: ["1337:1337"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default                           # ← pour joindre mbc-postgres
+      - app-net                           # ← pour parler à n8n
+
+volumes:
+  pgdata:
+
+networks:
+  app-net:
+    external: true                        # ce réseau doit exister (docker network create app-net)

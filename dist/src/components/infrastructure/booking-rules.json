@@ -1,0 +1,44 @@
+{
+    "collectionName": "components_infrastructure_booking_rules",
+    "info": {
+        "displayName": "Booking rules",
+        "description": "Rules for infrastructure booking validation"
+    },
+    "options": {},
+    "attributes": {
+        "open_days": {
+            "type": "json",
+            "required": true,
+            "default": [1, 2, 3, 4, 5]
+        },
+        "open_hours": {
+            "type": "json",
+            "required": true,
+            "default": [{ "start": "08:00", "end": "18:00" }]
+        },
+        "min_duration_min": {
+            "type": "integer",
+            "required": true,
+            "default": 30,
+            "min": 1
+        },
+        "max_duration_min": {
+            "type": "integer",
+            "required": true,
+            "default": 120,
+            "min": 1
+        },
+        "lead_time_min": {
+            "type": "integer",
+            "required": true,
+            "default": 120,
+            "min": 0
+        },
+        "cooldown_min": {
+            "type": "integer",
+            "required": true,
+            "default": 0,
+            "min": 0
+        }
+    }
+}

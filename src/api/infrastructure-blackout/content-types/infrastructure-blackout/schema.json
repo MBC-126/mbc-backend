@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "infrastructure_blackouts",
+  "info": {
+    "singularName": "infrastructure-blackout",
+    "pluralName": "infrastructure-blackouts",
+    "displayName": "Infrastructure Blackout",
+    "description": "Périodes d'indisponibilité des infrastructures"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "infrastructure": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::infrastructure.infrastructure",
+      "required": true
+    },
+    "start_at": {
+      "type": "datetime",
+      "required": true
+    },
+    "end_at": {
+      "type": "datetime",
+      "required": true
+    },
+    "reason": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

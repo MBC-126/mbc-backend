@@ -1,0 +1,150 @@
+{
+  "kind": "collectionType",
+  "collectionName": "up_users",
+  "info": {
+    "name": "user",
+    "description": "",
+    "singularName": "user",
+    "pluralName": "users",
+    "displayName": "User"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "username": {
+      "type": "string",
+      "minLength": 3,
+      "unique": true,
+      "configurable": false,
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "minLength": 6,
+      "configurable": false,
+      "required": true
+    },
+    "provider": {
+      "type": "string",
+      "configurable": false
+    },
+    "password": {
+      "type": "password",
+      "minLength": 6,
+      "configurable": false,
+      "private": true,
+      "searchable": false
+    },
+    "resetPasswordToken": {
+      "type": "string",
+      "configurable": false,
+      "private": true,
+      "searchable": false
+    },
+    "confirmationToken": {
+      "type": "string",
+      "configurable": false,
+      "private": true,
+      "searchable": false
+    },
+    "confirmed": {
+      "type": "boolean",
+      "default": false,
+      "configurable": false
+    },
+    "blocked": {
+      "type": "boolean",
+      "default": false,
+      "configurable": false
+    },
+    "role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.role",
+      "inversedBy": "users",
+      "configurable": false
+    },
+    "lastLoginAt": {
+      "type": "datetime"
+    },
+    "fcmToken": {
+      "type": "string",
+      "private": true
+    },
+    "firstName": {
+      "type": "string",
+      "required": true
+    },
+    "lastName": {
+      "type": "string",
+      "required": true
+    },
+    "unit": {
+      "type": "string",
+      "required": true
+    },
+    "rank": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "avatar": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "bio": {
+      "type": "text"
+    },
+    "announcements": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::announcement.announcement",
+      "mappedBy": "seller"
+    },
+    "carpooldriver": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::carpool.carpool",
+      "mappedBy": "driver"
+    },
+    "notificationPreferences": {
+      "type": "json",
+      "default": {
+        "enabled": true,
+        "announcements": true,
+        "carpooling": true,
+        "reservations": true,
+        "emergencyAlerts": true
+      }
+    },
+    "carpoolRating": {
+      "type": "decimal",
+      "default": 0,
+      "min": 0,
+      "max": 5
+    },
+    "carpoolReviewsCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "successfulSalesCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "isModerator": {
+      "type": "boolean",
+      "default": false
+    },
+    "isAppAdmin": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = {
+    routes: [
+        {
+            method: 'POST',
+            path: '/devices/register',
+            handler: 'device-token.register',
+            config: {
+                policies: []
+            }
+        },
+        {
+            method: 'POST',
+            path: '/devices/unregister',
+            handler: 'device-token.unregister',
+            config: {
+                policies: []
+            }
+        }
+    ]
+};

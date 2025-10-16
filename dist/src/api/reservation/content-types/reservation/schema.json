@@ -1,0 +1,62 @@
+{
+    "kind": "collectionType",
+    "collectionName": "reservations",
+    "info": {
+        "singularName": "reservation",
+        "pluralName": "reservations",
+        "displayName": "Reservation",
+        "description": "Réservations d'infrastructures"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "infrastructure": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::infrastructure.infrastructure"
+        },
+        "user": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "startTime": {
+            "type": "datetime",
+            "required": true
+        },
+        "endTime": {
+            "type": "datetime",
+            "required": true
+        },
+        "etatReservation": {
+            "type": "enumeration",
+            "default": "pending",
+            "enum": [
+                "pending",
+                "confirmed",
+                "rejected",
+                "cancelled",
+                "completed"
+            ]
+        },
+        "rejection_reason": {
+            "type": "text"
+        },
+        "purpose": {
+            "type": "string"
+        },
+        "participants": {
+            "type": "integer",
+            "default": 1
+        },
+        "notes": {
+            "type": "text"
+        },
+        "reminderTypesSent": {
+            "type": "json",
+            "default": []
+        }
+    }
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "events",
+  "info": {
+    "singularName": "event",
+    "pluralName": "events",
+    "displayName": "Event",
+    "description": "Événements de la base"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "location": {
+      "type": "string",
+      "required": true
+    },
+    "startDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "endDate": {
+      "type": "datetime"
+    },
+    "category": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "sport",
+        "social",
+        "formation",
+        "autre"
+      ]
+    },
+    "maxParticipants": {
+      "type": "integer"
+    },
+    "isPublic": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

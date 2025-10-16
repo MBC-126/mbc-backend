@@ -1,0 +1,52 @@
+{
+  "name": "app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Strapi application",
+  "scripts": {
+    "build": "strapi build",
+    "console": "strapi console",
+    "deploy": "strapi deploy",
+    "dev": "strapi develop",
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "strapi": "strapi",
+    "upgrade": "npx @strapi/upgrade latest",
+    "upgrade:dry": "npx @strapi/upgrade latest --dry"
+  },
+  "dependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.24.0",
+    "@strapi/plugin-cloud": "5.24.2",
+    "@strapi/plugin-users-permissions": "5.24.2",
+    "@strapi/strapi": "5.24.2",
+    "@swc/core-win32-x64-msvc": "^1.9.1",
+    "axios": "^1.12.2",
+    "date-fns-tz": "^3.2.0",
+    "firebase-admin": "^12.0.0",
+    "google-auth-library": "^10.4.0",
+    "jose": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.0",
+    "pg": "8.8.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "sharp": "^0.34.4",
+    "styled-components": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0 <=22.x.x",
+    "npm": ">=6.0.0"
+  },
+  "strapi": {
+    "uuid": "30342cf8-3623-4a74-a3ad-af6832871f77",
+    "installId": "3f12412dfd8d129ee8177fabac938881ff9d768a5ab991e75214c871a5db5711"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

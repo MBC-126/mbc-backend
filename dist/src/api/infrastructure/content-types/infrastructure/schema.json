@@ -1,0 +1,69 @@
+{
+    "kind": "collectionType",
+    "collectionName": "infrastructures",
+    "info": {
+        "singularName": "infrastructure",
+        "pluralName": "infrastructures",
+        "displayName": "Infrastructure",
+        "description": "Lieux et équipements réservables"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "name": {
+            "type": "string",
+            "required": true
+        },
+        "description": {
+            "type": "text"
+        },
+        "type": {
+            "type": "enumeration",
+            "required": true,
+            "enum": [
+                "salle",
+                "terrain",
+                "équipement",
+                "autre"
+            ]
+        },
+        "capacity": {
+            "type": "integer"
+        },
+        "location": {
+            "type": "string",
+            "required": true
+        },
+        "isFreeAccess": {
+            "type": "boolean",
+            "default": false
+        },
+        "bookingRules": {
+            "type": "component",
+            "component": "infrastructure.booking-rules",
+            "required": false
+        },
+        "managers": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "plugin::users-permissions.user"
+        },
+        "icsToken": {
+            "type": "string",
+            "unique": true
+        },
+        "images": {
+            "type": "media",
+            "multiple": true,
+            "allowedTypes": [
+                "images"
+            ]
+        },
+        "isActive": {
+            "type": "boolean",
+            "default": true
+        }
+    }
+}

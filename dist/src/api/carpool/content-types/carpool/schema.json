@@ -1,0 +1,102 @@
+{
+    "kind": "collectionType",
+    "collectionName": "carpools",
+    "info": {
+        "singularName": "carpool",
+        "pluralName": "carpools",
+        "displayName": "Carpool",
+        "description": "Système de covoiturage"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "tripType": {
+            "type": "enumeration",
+            "required": true,
+            "default": "offre",
+            "enum": [
+                "offre",
+                "demande"
+            ]
+        },
+        "departureLocation": {
+            "type": "string",
+            "required": true
+        },
+        "arrivalLocation": {
+            "type": "string",
+            "required": true
+        },
+        "departureTime": {
+            "type": "datetime",
+            "required": true
+        },
+        "returnTime": {
+            "type": "datetime"
+        },
+        "availableSeats": {
+            "type": "integer",
+            "required": true,
+            "min": 0,
+            "max": 8
+        },
+        "pricePerSeat": {
+            "type": "decimal"
+        },
+        "description": {
+            "type": "text"
+        },
+        "isRecurring": {
+            "type": "boolean",
+            "default": false
+        },
+        "recurringDays": {
+            "type": "json"
+        },
+        "etatCovoiturage": {
+            "type": "enumeration",
+            "default": "active",
+            "enum": [
+                "active",
+                "completed",
+                "cancelled"
+            ]
+        },
+        "vehicleInfo": {
+            "type": "string"
+        },
+        "meetingPoint": {
+            "type": "string"
+        },
+        "passengers": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "plugin::users-permissions.user"
+        },
+        "driver": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user",
+            "inversedBy": "carpooldriver"
+        },
+        "reminderSentAt": {
+            "type": "datetime"
+        },
+        "reminderTypesSent": {
+            "type": "json",
+            "default": []
+        },
+        "reportStatus": {
+            "type": "enumeration",
+            "enum": [
+                "none",
+                "reported",
+                "approved",
+                "rejected"
+            ],
+            "default": "none"
+        }
+    }
+}

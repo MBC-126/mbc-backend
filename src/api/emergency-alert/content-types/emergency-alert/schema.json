@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "emergency_alerts",
+  "info": {
+    "singularName": "emergency-alert",
+    "pluralName": "emergency-alerts",
+    "displayName": "Emergency Alert",
+    "description": "Alertes d'urgence"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "message": {
+      "type": "text",
+      "required": true
+    },
+    "severity": {
+      "type": "enumeration",
+      "enum": ["low", "medium", "high", "critical"],
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["sécurité", "météo", "technique", "autre"],
+      "required": true
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "expiresAt": {
+      "type": "datetime"
+    },
+    "targetUnits": {
+      "type": "json"
+    },
+    "requiresAcknowledgment": {
+      "type": "boolean",
+      "default": false
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "device_tokens",
+  "info": {
+    "singularName": "device-token",
+    "pluralName": "device-tokens",
+    "displayName": "Device token",
+    "description": "FCM push notification token"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "token": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "platform": {
+      "type": "enumeration",
+      "enum": ["ios", "android", "web"],
+      "required": true
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "last_seen": {
+      "type": "datetime"
+    }
+  }
+}
