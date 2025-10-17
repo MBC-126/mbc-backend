@@ -4,16 +4,16 @@ exports.default = {
     routes: [
         {
             method: 'GET',
-            path: '/events',
-            handler: 'event.find',
+            path: '/important-announcements',
+            handler: 'important-announcement.find',
             config: {
                 auth: false
             }
         },
         {
             method: 'GET',
-            path: '/events/:id',
-            handler: 'event.findOne',
+            path: '/important-announcements/:id',
+            handler: 'important-announcement.findOne',
             config: {
                 auth: false
             }

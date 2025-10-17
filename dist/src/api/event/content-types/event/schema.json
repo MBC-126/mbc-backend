@@ -5,45 +5,42 @@
         "singularName": "event",
         "pluralName": "events",
         "displayName": "Event",
-        "description": "Événements de la base"
+        "description": "Événements à venir sur la base"
     },
     "options": {
         "draftAndPublish": false
     },
     "pluginOptions": {},
     "attributes": {
-        "title": {
+        "name": {
             "type": "string",
-            "required": true
+            "required": true,
+            "maxLength": 200
         },
-        "description": {
-            "type": "text"
+        "eventDate": {
+            "type": "datetime",
+            "required": false
+        },
+        "date": {
+            "type": "string",
+            "required": false,
+            "maxLength": 50
+        },
+        "time": {
+            "type": "string",
+            "required": true,
+            "maxLength": 20
         },
         "location": {
             "type": "string",
-            "required": true
-        },
-        "startDate": {
-            "type": "datetime",
-            "required": true
-        },
-        "endDate": {
-            "type": "datetime"
-        },
-        "category": {
-            "type": "enumeration",
             "required": true,
-            "enum": [
-                "sport",
-                "social",
-                "formation",
-                "autre"
-            ]
+            "maxLength": 200
         },
-        "maxParticipants": {
-            "type": "integer"
+        "order": {
+            "type": "integer",
+            "default": 0
         },
-        "isPublic": {
+        "isActive": {
             "type": "boolean",
             "default": true
         }

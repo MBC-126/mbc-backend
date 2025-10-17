@@ -1,0 +1,43 @@
+{
+    "kind": "collectionType",
+    "collectionName": "important_announcements",
+    "info": {
+        "singularName": "important-announcement",
+        "pluralName": "important-announcements",
+        "displayName": "Important Announcement",
+        "description": "Annonces importantes pour l'écran d'accueil"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "title": {
+            "type": "string",
+            "required": true,
+            "maxLength": 200
+        },
+        "content": {
+            "type": "text",
+            "required": true
+        },
+        "icon": {
+            "type": "string",
+            "required": false,
+            "maxLength": 10,
+            "default": "📢"
+        },
+        "order": {
+            "type": "integer",
+            "default": 0
+        },
+        "isActive": {
+            "type": "boolean",
+            "default": true
+        },
+        "publishedAt": {
+            "type": "datetime",
+            "required": false
+        }
+    }
+}

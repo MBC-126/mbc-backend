@@ -1,0 +1,36 @@
+{
+    "kind": "collectionType",
+    "collectionName": "daily_menus",
+    "info": {
+        "singularName": "daily-menu",
+        "pluralName": "daily-menus",
+        "displayName": "Daily Menu",
+        "description": "Menu du jour au mess"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "date": {
+            "type": "date",
+            "required": true,
+            "unique": true
+        },
+        "entree": {
+            "type": "string",
+            "required": false,
+            "maxLength": 200
+        },
+        "plat": {
+            "type": "string",
+            "required": true,
+            "maxLength": 200
+        },
+        "dessert": {
+            "type": "string",
+            "required": false,
+            "maxLength": 200
+        }
+    }
+}
