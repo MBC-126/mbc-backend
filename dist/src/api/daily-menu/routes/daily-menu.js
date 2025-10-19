@@ -17,6 +17,33 @@ exports.default = {
             config: {
                 auth: false
             }
+        },
+        {
+            method: 'POST',
+            path: '/daily-menus',
+            handler: 'daily-menu.create',
+            config: {
+                policies: [],
+                middlewares: []
+            }
+        },
+        {
+            method: 'PUT',
+            path: '/daily-menus/:id',
+            handler: 'daily-menu.update',
+            config: {
+                policies: [],
+                middlewares: []
+            }
+        },
+        {
+            method: 'DELETE',
+            path: '/daily-menus/:id',
+            handler: 'daily-menu.delete',
+            config: {
+                policies: [],
+                middlewares: []
+            }
         }
     ]
 };

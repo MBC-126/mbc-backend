@@ -14,27 +14,53 @@
   "attributes": {
     "name": {
       "type": "string",
-      "required": true,
-      "maxLength": 200
-    },
-    "eventDate": {
-      "type": "datetime",
-      "required": false
-    },
-    "date": {
-      "type": "string",
-      "required": false,
-      "maxLength": 50
-    },
-    "time": {
-      "type": "string",
-      "required": true,
-      "maxLength": 20
+      "maxLength": 200,
+      "required": true
     },
     "location": {
       "type": "string",
-      "required": true,
-      "maxLength": 200
+      "maxLength": 200,
+      "required": false
+    },
+    "description": {
+      "type": "text",
+      "required": false
+    },
+    "date": {
+      "type": "date",
+      "required": true
+    },
+    "time": {
+      "type": "string",
+      "maxLength": 20,
+      "required": false
+    },
+    "isRecurring": {
+      "type": "boolean",
+      "default": false
+    },
+    "recurrencePattern": {
+      "type": "enumeration",
+      "required": false,
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly"
+      ]
+    },
+    "recurrenceEndDate": {
+      "type": "date",
+      "conditions": {
+        "visible": {
+          "!=": [
+            {
+              "var": "isRecurring"
+            },
+            false
+          ]
+        }
+      },
+      "required": false
     },
     "order": {
       "type": "integer",

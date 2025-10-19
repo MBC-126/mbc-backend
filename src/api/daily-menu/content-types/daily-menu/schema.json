@@ -5,7 +5,7 @@
     "singularName": "daily-menu",
     "pluralName": "daily-menus",
     "displayName": "Daily Menu",
-    "description": "Menu du jour au mess"
+    "description": "Menu du jour au mess (un plat par ligne)"
   },
   "options": {
     "draftAndPublish": false
@@ -18,19 +18,16 @@
       "unique": true
     },
     "entree": {
-      "type": "string",
-      "required": false,
-      "maxLength": 200
+      "type": "text",
+      "required": false
     },
     "plat": {
-      "type": "string",
-      "required": true,
-      "maxLength": 200
+      "type": "text",
+      "required": true
     },
     "dessert": {
-      "type": "string",
-      "required": false,
-      "maxLength": 200
+      "type": "text",
+      "required": false
     }
   }
 }

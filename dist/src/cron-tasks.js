@@ -68,5 +68,64 @@ exports.default = {
             }
         }
         console.log('✅ Nettoyage terminé');
+    },
+    // S'exécute tous les jours à 4h du matin pour nettoyer les événements périmés
+    '0 4 * * *': async ({ strapi }) => {
+        try {
+            console.log('🗑️ Nettoyage des événements périmés...');
+            // Date d'il y a 7 jours
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            // Trouver tous les événements non-récurrents
+            const allEvents = await strapi.db.query('api::event.event').findMany({
+                select: ['id', 'date', 'isRecurring', 'recurrenceEndDate']
+            });
+            let deletedCount = 0;
+            // Filtrer et supprimer les événements périmés depuis 7 jours
+            for (const event of allEvents) {
+                if (!event.date)
+                    continue;
+                // Ne pas supprimer les événements récurrents actifs
+                if (event.isRecurring) {
+                    // Supprimer seulement si recurrenceEndDate est définie et périmée depuis 7 jours
+                    if (event.recurrenceEndDate) {
+                        const endDate = new Date(event.recurrenceEndDate);
+                        if (endDate < sevenDaysAgo) {
+                            try {
+                                await strapi.db.query('api::event.event').delete({
+                                    where: { id: event.id }
+                                });
+                                deletedCount++;
+                                console.log(`✅ Événement récurrent ${event.id} supprimé (fin de récurrence: ${event.recurrenceEndDate})`);
+                            }
+                            catch (error) {
+                                console.error(`❌ Erreur suppression événement ${event.id}:`, error);
+                            }
+                        }
+                    }
+                    // Sinon, événement récurrent sans fin, on ne le supprime pas
+                    continue;
+                }
+                // Pour les événements non-récurrents
+                const eventDate = new Date(event.date);
+                // Si l'événement est périmé depuis plus de 7 jours
+                if (eventDate < sevenDaysAgo) {
+                    try {
+                        await strapi.db.query('api::event.event').delete({
+                            where: { id: event.id }
+                        });
+                        deletedCount++;
+                        console.log(`✅ Événement ${event.id} supprimé (date: ${event.date})`);
+                    }
+                    catch (error) {
+                        console.error(`❌ Erreur suppression événement ${event.id}:`, error);
+                    }
+                }
+            }
+            console.log(`✅ Nettoyage des événements terminé: ${deletedCount} événement(s) supprimé(s)`);
+        }
+        catch (error) {
+            console.error('❌ Erreur globale cron événements:', error);
+        }
     }
 };
