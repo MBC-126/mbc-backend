@@ -28,6 +28,11 @@
         "dessert": {
             "type": "text",
             "required": false
+        },
+        "isActive": {
+            "type": "boolean",
+            "default": true,
+            "required": true
         }
     }
 }

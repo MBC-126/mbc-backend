@@ -72,7 +72,8 @@ exports.default = strapi_1.factories.createCoreService('api::notification.notifi
             'reservation_rejected': 'reservations',
             'reservation_reminder': 'reservations',
             'menu_available': 'announcements',
-            'emergency_alert': 'emergencyAlerts'
+            'emergency_alert': 'emergencyAlerts',
+            'important_announcement': 'announcements'
         };
         return mapping[type] || null;
     },

@@ -50,7 +50,7 @@ services:
       - ./package.json:/opt/app/package.json
       - ./yarn.lock:/opt/app/yarn.lock
       - ./public/uploads:/opt/app/public/uploads
-    ports: ["1337:1337"]
+    ports: ["0.0.0.0:1337:1337"]
     depends_on:
       postgres:
         condition: service_healthy

@@ -23,7 +23,8 @@
         "reservation_rejected",
         "reservation_reminder",
         "menu_available",
-        "emergency_alert"
+        "emergency_alert",
+        "important_announcement"
       ],
       "required": true
     },

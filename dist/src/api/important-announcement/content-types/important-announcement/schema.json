@@ -31,6 +31,12 @@
             "type": "integer",
             "default": 0
         },
+        "priority": {
+            "type": "enumeration",
+            "enum": ["very high", "high", "normal", "low"],
+            "default": "normal",
+            "required": true
+        },
         "isActive": {
             "type": "boolean",
             "default": true
