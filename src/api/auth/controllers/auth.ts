@@ -106,6 +106,12 @@ export default ({ strapi }) => ({
 
     try {
       console.log('📥 ProConnect callback received, code:', code.substring(0, 20) + '...');
+      console.log('🔍 ENV VARS:', {
+        CLIENT_ID: process.env.PROCONNECT_CLIENT_ID,
+        CLIENT_SECRET: process.env.PROCONNECT_CLIENT_SECRET?.substring(0, 10) + '...',
+        REDIRECT_URI: process.env.PROCONNECT_REDIRECT_URI_HTTPS,
+        DOMAIN: process.env.PROCONNECT_DOMAIN,
+      });
 
       // 1. Échanger le code contre les tokens
       const tokenParams = {
