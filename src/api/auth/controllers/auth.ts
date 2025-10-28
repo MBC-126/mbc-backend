@@ -108,15 +108,23 @@ export default ({ strapi }) => ({
       console.log('📥 ProConnect callback received, code:', code.substring(0, 20) + '...');
 
       // 1. Échanger le code contre les tokens
+      const tokenParams = {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.PROCONNECT_REDIRECT_URI_HTTPS || 'https://api.mabase.app/api/auth/proconnect/callback',
+        client_id: process.env.PROCONNECT_CLIENT_ID,
+        client_secret: process.env.PROCONNECT_CLIENT_SECRET,
+      };
+
+      console.log('🔑 Token exchange params:', {
+        ...tokenParams,
+        client_secret: tokenParams.client_secret?.substring(0, 10) + '...',
+        code: tokenParams.code?.substring(0, 20) + '...',
+      });
+
       const tokenResponse = await axios.post(
         `${PROCONNECT_BASE_URL}/api/v2/token`,
-        new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: process.env.PROCONNECT_REDIRECT_URI_HTTPS || 'https://api.mabase.app/api/auth/proconnect/callback',
-          client_id: process.env.PROCONNECT_CLIENT_ID,
-          client_secret: process.env.PROCONNECT_CLIENT_SECRET,
-        }),
+        new URLSearchParams(tokenParams),
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
