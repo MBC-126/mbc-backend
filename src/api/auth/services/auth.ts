@@ -10,6 +10,18 @@ const EXPECTED_ISSUER = `${baseUrl}/api/v2`;
 const EXPECTED_AUDIENCE = process.env.PROCONNECT_CLIENT_ID;
 const EXPECTED_ALG = (process.env.OIDC_EXPECTED_ALG || 'RS256') as jwt.Algorithm;
 
+// Log configuration at startup
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('🔐 ProConnect Service Configuration');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('🌐 Domain:', envDomain);
+console.log('🔗 Base URL:', baseUrl);
+console.log('🔗 JWKS URI:', PROCONNECT_JWKS_URI);
+console.log('🆔 Expected Audience (Client ID):', EXPECTED_AUDIENCE || 'NOT SET');
+console.log('🔒 Expected Issuer:', EXPECTED_ISSUER);
+console.log('🔐 Expected Algorithm:', EXPECTED_ALG);
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
 const client = jwksClient({
   jwksUri: PROCONNECT_JWKS_URI,
   cache: true,

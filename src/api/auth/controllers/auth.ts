@@ -105,13 +105,20 @@ export default ({ strapi }) => ({
     }
 
     try {
-      console.log('📥 ProConnect callback received, code:', code.substring(0, 20) + '...');
-      console.log('🔍 ENV VARS:', {
-        CLIENT_ID: process.env.PROCONNECT_CLIENT_ID,
-        CLIENT_SECRET: process.env.PROCONNECT_CLIENT_SECRET?.substring(0, 10) + '...',
-        REDIRECT_URI: process.env.PROCONNECT_REDIRECT_URI_HTTPS,
-        DOMAIN: process.env.PROCONNECT_DOMAIN,
-      });
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📥 ProConnect Callback Received (Backend)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📝 Code:', code.substring(0, 20) + '...');
+      console.log('🔐 State:', state);
+      console.log('');
+      console.log('🔍 ProConnect Configuration (Backend):');
+      console.log('🌐 Domain:', process.env.PROCONNECT_DOMAIN || 'NOT SET');
+      console.log('🔗 Base URL:', PROCONNECT_BASE_URL);
+      console.log('🔗 Token Endpoint:', `${PROCONNECT_BASE_URL}/api/v2/token`);
+      console.log('🆔 Client ID:', process.env.PROCONNECT_CLIENT_ID || 'NOT SET');
+      console.log('🔑 Client Secret:', process.env.PROCONNECT_CLIENT_SECRET ? process.env.PROCONNECT_CLIENT_SECRET.substring(0, 10) + '...' : 'NOT SET');
+      console.log('📍 Redirect URI:', process.env.PROCONNECT_REDIRECT_URI_HTTPS || 'NOT SET');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // 1. Échanger le code contre les tokens
       const tokenParams = {
@@ -122,11 +129,14 @@ export default ({ strapi }) => ({
         client_secret: process.env.PROCONNECT_CLIENT_SECRET,
       };
 
-      console.log('🔑 Token exchange params:', {
-        ...tokenParams,
-        client_secret: tokenParams.client_secret?.substring(0, 10) + '...',
-        code: tokenParams.code?.substring(0, 20) + '...',
-      });
+      console.log('');
+      console.log('🔑 Token Exchange Request:');
+      console.log('  grant_type:', tokenParams.grant_type);
+      console.log('  redirect_uri:', tokenParams.redirect_uri);
+      console.log('  client_id:', tokenParams.client_id);
+      console.log('  client_secret:', tokenParams.client_secret?.substring(0, 10) + '...');
+      console.log('  code:', tokenParams.code?.substring(0, 20) + '...');
+      console.log('  Full token_endpoint:', `${PROCONNECT_BASE_URL}/api/v2/token`);
 
       const tokenResponse = await axios.post(
         `${PROCONNECT_BASE_URL}/api/v2/token`,
