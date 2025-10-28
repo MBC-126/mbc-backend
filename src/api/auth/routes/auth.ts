@@ -12,5 +12,17 @@ export default {
       handler: 'auth.proconnectLogin',
       config: { auth: false },
     },
+    {
+      method: 'GET',
+      path: '/auth/proconnect/callback',
+      handler: 'auth.proconnectCallback',
+      config: { auth: false },
+    },
+    {
+      method: 'GET',
+      path: '/auth/proconnect/logout/callback',
+      handler: 'auth.proconnectLogoutCallback',
+      config: { auth: false },
+    },
   ],
 };
