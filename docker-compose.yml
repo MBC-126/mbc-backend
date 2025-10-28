@@ -49,6 +49,7 @@ services:
       - ./config:/opt/app/config
       - ./src:/opt/app/src
       - ./dist:/opt/app/dist
+      - ./types:/opt/app/types
       - ./package.json:/opt/app/package.json
       - ./yarn.lock:/opt/app/yarn.lock
       - ./public/uploads:/opt/app/public/uploads

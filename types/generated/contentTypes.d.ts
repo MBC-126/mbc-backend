@@ -468,6 +468,10 @@ export interface ApiAnnouncementAnnouncement
     location: Schema.Attribute.String;
     price: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    reportStatus: Schema.Attribute.Enumeration<
+      ['none', 'reported', 'approved', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'none'>;
     seller: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::users-permissions.user'
@@ -630,6 +634,10 @@ export interface ApiCarpoolCarpool extends Struct.CollectionTypeSchema {
     recurringDays: Schema.Attribute.JSON;
     reminderSentAt: Schema.Attribute.DateTime;
     reminderTypesSent: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    reportStatus: Schema.Attribute.Enumeration<
+      ['none', 'reported', 'approved', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'none'>;
     returnTime: Schema.Attribute.DateTime;
     tripType: Schema.Attribute.Enumeration<['offre', 'demande']> &
       Schema.Attribute.Required &
@@ -638,6 +646,43 @@ export interface ApiCarpoolCarpool extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     vehicleInfo: Schema.Attribute.String;
+  };
+}
+
+export interface ApiDailyMenuDailyMenu extends Struct.CollectionTypeSchema {
+  collectionName: 'daily_menus';
+  info: {
+    description: 'Menu du jour au mess (un plat par ligne)';
+    displayName: 'Daily Menu';
+    pluralName: 'daily-menus';
+    singularName: 'daily-menu';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.Date &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    dessert: Schema.Attribute.Text;
+    entree: Schema.Attribute.Text;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::daily-menu.daily-menu'
+    > &
+      Schema.Attribute.Private;
+    plat: Schema.Attribute.Text & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -727,10 +772,54 @@ export interface ApiEmergencyAlertEmergencyAlert
   };
 }
 
+export interface ApiEmergencyContactEmergencyContact
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'emergency_contacts';
+  info: {
+    description: "Num\u00E9ros d'urgence de la base";
+    displayName: 'Emergency Contact';
+    pluralName: 'emergency-contacts';
+    singularName: 'emergency-contact';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    icon: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::emergency-contact.emergency-contact'
+    > &
+      Schema.Attribute.Private;
+    number: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiEventEvent extends Struct.CollectionTypeSchema {
   collectionName: 'events';
   info: {
-    description: '\u00C9v\u00E9nements de la base';
+    description: '\u00C9v\u00E9nements \u00E0 venir sur la base';
     displayName: 'Event';
     pluralName: 'events';
     singularName: 'event';
@@ -739,24 +828,82 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
-    category: Schema.Attribute.Enumeration<
-      ['sport', 'social', 'formation', 'autre']
-    > &
-      Schema.Attribute.Required;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    date: Schema.Attribute.Date & Schema.Attribute.Required;
     description: Schema.Attribute.Text;
-    endDate: Schema.Attribute.DateTime;
-    isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    isRecurring: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::event.event'> &
       Schema.Attribute.Private;
-    location: Schema.Attribute.String & Schema.Attribute.Required;
-    maxParticipants: Schema.Attribute.Integer;
+    location: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
-    startDate: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    title: Schema.Attribute.String & Schema.Attribute.Required;
+    recurrenceEndDate: Schema.Attribute.Date;
+    recurrencePattern: Schema.Attribute.Enumeration<
+      ['daily', 'weekly', 'monthly']
+    >;
+    time: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiImportantAnnouncementImportantAnnouncement
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'important_announcements';
+  info: {
+    description: "Annonces importantes pour l'\u00E9cran d'accueil";
+    displayName: 'Important Announcement';
+    pluralName: 'important-announcements';
+    singularName: 'important-announcement';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    icon: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }> &
+      Schema.Attribute.DefaultTo<'\uD83D\uDCE2'>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::important-announcement.important-announcement'
+    > &
+      Schema.Attribute.Private;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    priority: Schema.Attribute.Enumeration<
+      ['very high', 'high', 'normal', 'low']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'normal'>;
+    publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -849,6 +996,57 @@ export interface ApiInfrastructureInfrastructure
   };
 }
 
+export interface ApiModerationReportModerationReport
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'moderation_reports';
+  info: {
+    description: 'Signalements de contenu pour mod\u00E9ration';
+    displayName: 'Moderation Report';
+    pluralName: 'moderation-reports';
+    singularName: 'moderation-report';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::moderation-report.moderation-report'
+    > &
+      Schema.Attribute.Private;
+    moderator: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    reason: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    reporter: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
+      Schema.Attribute.Required;
+    resolvedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'kept', 'removed', 'dismissed']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    targetId: Schema.Attribute.String & Schema.Attribute.Required;
+    targetType: Schema.Attribute.Enumeration<['announcement', 'carpool']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiNotificationNotification
   extends Struct.CollectionTypeSchema {
   collectionName: 'notifications';
@@ -896,6 +1094,7 @@ export interface ApiNotificationNotification
         'reservation_reminder',
         'menu_available',
         'emergency_alert',
+        'important_announcement',
       ]
     > &
       Schema.Attribute.Required;
@@ -1447,6 +1646,8 @@ export interface PluginUsersPermissionsUser
       }>;
     fcmToken: Schema.Attribute.String & Schema.Attribute.Private;
     firstName: Schema.Attribute.String & Schema.Attribute.Required;
+    isAppAdmin: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isModerator: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     lastLoginAt: Schema.Attribute.DateTime;
     lastName: Schema.Attribute.String & Schema.Attribute.Required;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
@@ -1507,11 +1708,15 @@ declare module '@strapi/strapi' {
       'api::carpool-passenger.carpool-passenger': ApiCarpoolPassengerCarpoolPassenger;
       'api::carpool-review.carpool-review': ApiCarpoolReviewCarpoolReview;
       'api::carpool.carpool': ApiCarpoolCarpool;
+      'api::daily-menu.daily-menu': ApiDailyMenuDailyMenu;
       'api::device-token.device-token': ApiDeviceTokenDeviceToken;
       'api::emergency-alert.emergency-alert': ApiEmergencyAlertEmergencyAlert;
+      'api::emergency-contact.emergency-contact': ApiEmergencyContactEmergencyContact;
       'api::event.event': ApiEventEvent;
+      'api::important-announcement.important-announcement': ApiImportantAnnouncementImportantAnnouncement;
       'api::infrastructure-blackout.infrastructure-blackout': ApiInfrastructureBlackoutInfrastructureBlackout;
       'api::infrastructure.infrastructure': ApiInfrastructureInfrastructure;
+      'api::moderation-report.moderation-report': ApiModerationReportModerationReport;
       'api::notification.notification': ApiNotificationNotification;
       'api::reservation.reservation': ApiReservationReservation;
       'plugin::content-releases.release': PluginContentReleasesRelease;
