@@ -1,0 +1,8 @@
+services:
+  strapi:
+    image: mabase/strapi:v5   # ou build: . puis image: mabase/strapi:v5 si tu veux forcer un build
+    ports:
+      - "18080:8080"
+    env_file:
+      - .env.prod
+    depends_on: []
