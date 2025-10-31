@@ -1,3 +1,5 @@
 .env
 /dist
 *.sql
+.env.prod
+.env.docker

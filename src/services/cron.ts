@@ -10,6 +10,8 @@ export function startAllCronJobs(strapi: any) {
   startExpiringAnnouncementsCheck(strapi);
   startReservationReminders(strapi);
   startOldCarpoolsCleanup(strapi);
+  startImportantAnnouncementsCleanup(strapi);
+  startImportantAnnouncementsNotifications(strapi);
   console.log('🕐 Tous les cron jobs sont démarrés');
 }
 
@@ -228,5 +230,170 @@ async function cleanOldCarpools(strapi: any) {
     }
   } catch (error) {
     console.error('❌ Erreur lors du nettoyage des trajets:', error);
+  }
+}
+
+/**
+ * Supprime les annonces importantes expirées selon leur displayUntil + autoDeleteAfterDays
+ * S'exécute tous les jours à 2h du matin
+ */
+function startImportantAnnouncementsCleanup(strapi: any) {
+  // Nettoyer immédiatement au démarrage
+  cleanExpiredImportantAnnouncements(strapi);
+
+  // Puis tous les jours à 2h du matin
+  setInterval(() => {
+    const now = new Date();
+    if (now.getHours() === 2 && now.getMinutes() === 0) {
+      cleanExpiredImportantAnnouncements(strapi);
+    }
+  }, 60 * 1000); // Check every minute
+
+  console.log('🕐 Cron job: Nettoyage des annonces importantes expirées (tous les jours à 2h)');
+}
+
+async function cleanExpiredImportantAnnouncements(strapi: any) {
+  try {
+    const now = new Date();
+
+    // Trouver toutes les annonces avec displayUntil défini
+    const announcements = await strapi.db.query('api::important-announcement.important-announcement').findMany({
+      where: {
+        displayUntil: {
+          $notNull: true
+        }
+      }
+    });
+
+    const toDelete = [];
+
+    for (const announcement of announcements) {
+      const displayUntil = new Date(announcement.displayUntil);
+      const deleteAfterDays = announcement.autoDeleteAfterDays || 7; // Défaut: 7 jours
+
+      // Calculer la date de suppression
+      const deleteDate = new Date(displayUntil);
+      deleteDate.setDate(deleteDate.getDate() + deleteAfterDays);
+
+      // Si la date de suppression est dépassée
+      if (now >= deleteDate) {
+        toDelete.push(announcement.id);
+      }
+    }
+
+    if (toDelete.length > 0) {
+      const deletedCount = await strapi.db.query('api::important-announcement.important-announcement').deleteMany({
+        where: {
+          id: {
+            $in: toDelete
+          }
+        }
+      });
+
+      console.log(`🗑️ Nettoyage annonces importantes : ${deletedCount || 0} annonce(s) expirée(s) supprimée(s)`);
+    } else {
+      console.log('✅ Nettoyage annonces importantes : Aucune annonce à supprimer');
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors du nettoyage des annonces importantes:', error);
+  }
+}
+
+/**
+ * Envoie des notifications pour les nouvelles annonces importantes de priorité high/very high
+ * S'exécute toutes les 10 minutes entre 7h et 23h
+ */
+function startImportantAnnouncementsNotifications(strapi: any) {
+  // Vérifier immédiatement au démarrage
+  sendImportantAnnouncementsNotifications(strapi);
+
+  // Puis toutes les 10 minutes
+  setInterval(() => {
+    sendImportantAnnouncementsNotifications(strapi);
+  }, 10 * 60 * 1000); // Toutes les 10 minutes
+
+  console.log('🕐 Cron job: Notifications annonces importantes (toutes les 10 min, 7h-23h)');
+}
+
+async function sendImportantAnnouncementsNotifications(strapi: any) {
+  try {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Silence nocturne : ne pas envoyer de notifications entre 23h et 7h
+    if (currentHour >= 23 || currentHour < 7) {
+      return; // Sortir silencieusement
+    }
+
+    const nowISO = now.toISOString();
+
+    // Trouver les annonces qui doivent déclencher une notification :
+    // - Priorité high ou very high
+    // - notificationSent = false
+    // - isActive = true
+    // - startDate atteint (soit null, soit <= maintenant)
+    // - displayUntil pas encore dépassé (soit null, soit >= maintenant)
+    const announcements = await strapi.db.query('api::important-announcement.important-announcement').findMany({
+      where: {
+        $and: [
+          { isActive: { $eq: true } },
+          { notificationSent: { $eq: false } },
+          {
+            $or: [
+              { priority: { $eq: 'high' } },
+              { priority: { $eq: 'very high' } }
+            ]
+          },
+          {
+            $or: [
+              { startDate: { $null: true } },
+              { startDate: { $lte: nowISO } }
+            ]
+          },
+          {
+            $or: [
+              { displayUntil: { $null: true } },
+              { displayUntil: { $gte: nowISO } }
+            ]
+          }
+        ]
+      }
+    });
+
+    if (announcements.length === 0) {
+      return; // Aucune annonce à notifier
+    }
+
+    console.log(`📢 ${announcements.length} annonce(s) importante(s) à notifier`);
+
+    for (const announcement of announcements) {
+      try {
+        // Déterminer l'icône selon la priorité
+        const priorityIcon = announcement.priority === 'very high' ? '🚨' : '⚠️';
+        const icon = announcement.icon || '📢';
+
+        // Envoyer une notification broadcast à tous les utilisateurs
+        await strapi.service('api::notification.notification').broadcastNotification({
+          type: 'important_announcement',
+          title: `${priorityIcon} ${icon} ${announcement.title}`,
+          body: announcement.content,
+          priority: announcement.priority === 'very high' ? 'urgent' : 'high',
+          relatedItemId: announcement.documentId || announcement.id.toString(),
+          relatedItemType: 'important-announcement'
+        });
+
+        // Marquer la notification comme envoyée
+        await strapi.db.query('api::important-announcement.important-announcement').update({
+          where: { id: announcement.id },
+          data: { notificationSent: true }
+        });
+
+        console.log(`✅ Notification envoyée pour : "${announcement.title}"`);
+      } catch (error) {
+        console.error(`❌ Erreur lors de l'envoi de la notification pour "${announcement.title}":`, error);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi des notifications d\'annonces importantes:', error);
   }
 }

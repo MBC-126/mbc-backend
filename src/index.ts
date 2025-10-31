@@ -1,7 +1,6 @@
 // import type { Core } from '@strapi/strapi';
 import { initializeFirebase } from './services/firebase';
 import { startAllCronJobs } from './services/cron';
-import imageProcessor from './services/image-processor';
 import { registerN8nRoutes } from './utils/n8n-routes';
 
 export default {

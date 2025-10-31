@@ -876,10 +876,20 @@ export interface ApiImportantAnnouncementImportantAnnouncement
     draftAndPublish: false;
   };
   attributes: {
+    autoDeleteAfterDays: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 365;
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<7>;
     content: Schema.Attribute.Text & Schema.Attribute.Required;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    displayUntil: Schema.Attribute.DateTime;
     icon: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 10;
@@ -892,6 +902,8 @@ export interface ApiImportantAnnouncementImportantAnnouncement
       'api::important-announcement.important-announcement'
     > &
       Schema.Attribute.Private;
+    notificationSent: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     priority: Schema.Attribute.Enumeration<
       ['very high', 'high', 'normal', 'low']
@@ -899,6 +911,7 @@ export interface ApiImportantAnnouncementImportantAnnouncement
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'normal'>;
     publishedAt: Schema.Attribute.DateTime;
+    startDate: Schema.Attribute.DateTime;
     title: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{

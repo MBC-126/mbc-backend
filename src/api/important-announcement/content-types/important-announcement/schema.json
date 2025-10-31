@@ -44,6 +44,28 @@
     "publishedAt": {
       "type": "datetime",
       "required": false
+    },
+    "startDate": {
+      "type": "datetime",
+      "required": false,
+      "description": "Date à partir de laquelle l'annonce devient pertinente et s'affiche (J). Si non défini, l'annonce s'affiche immédiatement."
+    },
+    "displayUntil": {
+      "type": "datetime",
+      "required": false,
+      "description": "Date jusqu'à laquelle l'annonce est affichée. Après cette date, elle disparaît automatiquement."
+    },
+    "autoDeleteAfterDays": {
+      "type": "integer",
+      "default": 7,
+      "min": 1,
+      "max": 365,
+      "description": "Nombre de jours après displayUntil avant suppression automatique (défaut: 7 jours)"
+    },
+    "notificationSent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indique si une notification a déjà été envoyée pour cette annonce (pour les priorités high/very high)"
     }
   }
 }
