@@ -70,3 +70,6 @@ build/
 .env.development
 .env.production
 /.claude
+generate-scaleway-env.js
+DEPLOY_SCALEWAY.md
+scaleway-env-vars.json

@@ -1,7 +1,9 @@
 import path from 'path';
 
 export default ({ env }) => {
-  const client = env('DATABASE_CLIENT', 'sqlite');
+  // Auto-detect postgres if DATABASE_URL is provided
+  const hasPostgresUrl = !!env('DATABASE_URL');
+  const client = env('DATABASE_CLIENT', hasPostgresUrl ? 'postgres' : 'sqlite');
 
   const connections = {
     mysql: {

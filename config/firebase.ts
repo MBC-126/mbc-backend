@@ -12,29 +12,38 @@ export default ({ env }) => {
   // On vérifie si les variables nécessaires sont bien présentes.
   // Pendant le 'build', elles seront 'undefined'.
   if (projectId && clientEmail && privateKey) {
-    
+
     // On ne tente d'initialiser Firebase que si les secrets existent.
     if (!admin.apps.length) {
       try {
+        // Nettoyer la clé : remplacer les \\n par de vrais \n
+        const cleanPrivateKey = privateKey.replace(/\\n/g, '\n');
+
         admin.initializeApp({
           credential: admin.credential.cert({
             projectId,
             clientEmail,
-            privateKey: privateKey.replace(/\\n/g, '\n'), // On garde votre astuce pour les sauts de ligne
+            privateKey: cleanPrivateKey,
           }),
         });
         console.log('✅ SDK Admin Firebase initialisé avec succès.');
       } catch (e) {
         console.error('❌ Erreur d\'initialisation du SDK Admin Firebase:', e.message);
+        throw new Error(`Firebase initialization failed: ${e.message}`); // On plante si Firebase échoue
       }
     }
-    
+
     // Si tout est bon, on exporte l'instance initialisée.
-    return {
-      messaging: admin.messaging(),
-      firestore: admin.firestore(),
-      admin,
-    };
+    try {
+      return {
+        messaging: admin.messaging(),
+        firestore: admin.firestore(),
+        admin,
+      };
+    } catch (e) {
+      console.error('❌ Impossible d\'accéder aux services Firebase:', e.message);
+      return {};
+    }
   }
 
   // Si les variables manquent (pendant le build), on exporte un objet vide.
