@@ -151,5 +151,39 @@ export default {
       console.error('❌ Erreur markAsRead:', error);
       return ctx.internalServerError(error.message);
     }
+  },
+
+  /**
+   * Supprime une conversation
+   * DELETE /api/chat/conversations/:id
+   */
+  async deleteConversation(ctx: any) {
+    const user = ctx.state.user;
+    if (!user) {
+      return ctx.unauthorized('Vous devez être connecté');
+    }
+
+    const { id: conversationId } = ctx.params;
+
+    try {
+      const chatService = new FirebaseChatService(getFirebaseAdmin());
+      await chatService.deleteConversation(conversationId, user.id);
+
+      return ctx.send({
+        message: 'Conversation supprimée avec succès'
+      });
+    } catch (error: any) {
+      console.error('❌ Erreur deleteConversation:', error);
+
+      // Gestion spécifique des erreurs
+      if (error.message === 'Conversation introuvable') {
+        return ctx.notFound(error.message);
+      }
+      if (error.message === 'Non autorisé à supprimer cette conversation') {
+        return ctx.forbidden(error.message);
+      }
+
+      return ctx.internalServerError(error.message);
+    }
   }
 };

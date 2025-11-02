@@ -24,6 +24,11 @@ export default {
       method: 'PUT',
       path: '/chat/conversations/:id/read',
       handler: 'chat.markAsRead',
+    },
+    {
+      method: 'DELETE',
+      path: '/chat/conversations/:id',
+      handler: 'chat.deleteConversation',
     }
   ]
 };

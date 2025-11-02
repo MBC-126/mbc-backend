@@ -294,6 +294,47 @@ export class FirebaseChatService {
       // Ne pas bloquer l'envoi du message si la notif échoue
     }
   }
+
+  /**
+   * Supprime une conversation et tous ses messages
+   */
+  async deleteConversation(conversationId: string, userId: number): Promise<void> {
+    try {
+      console.log(`🗑️ Suppression conversation ${conversationId} par user ${userId}`);
+
+      const conversationRef = this.db.collection('conversations').doc(conversationId);
+      const conversationDoc = await conversationRef.get();
+
+      if (!conversationDoc.exists) {
+        throw new Error('Conversation introuvable');
+      }
+
+      const conversationData = conversationDoc.data();
+
+      // Vérifier que l'utilisateur fait partie de la conversation
+      if (!conversationData.participants.includes(userId)) {
+        throw new Error('Non autorisé à supprimer cette conversation');
+      }
+
+      // Supprimer tous les messages
+      const messagesSnapshot = await conversationRef.collection('messages').get();
+      const batch = this.db.batch();
+
+      messagesSnapshot.docs.forEach((doc: any) => {
+        batch.delete(doc.ref);
+      });
+
+      // Supprimer la conversation
+      batch.delete(conversationRef);
+
+      await batch.commit();
+
+      console.log(`✅ Conversation ${conversationId} supprimée`);
+    } catch (error) {
+      console.error('❌ Erreur deleteConversation:', error);
+      throw error;
+    }
+  }
 }
 
 export default FirebaseChatService;
