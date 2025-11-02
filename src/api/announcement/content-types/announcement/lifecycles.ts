@@ -84,8 +84,77 @@ export default {
         }
       }
 
+      // Notification INSTANTANÉE si l'annonce est supprimée (status 'supprimée')
+      if (result.etat === 'supprimée' && announcement.seller) {
+        console.log(`🗑️ Annonce supprimée:`, result.documentId);
+
+        const sellerId = announcement.seller.id;
+
+        if (sellerId) {
+          await strapi.service('api::notification.notification').createNotification(sellerId, {
+            type: 'announcement_deleted',
+            title: '🗑️ Annonce supprimée',
+            body: `Votre annonce "${announcement.title}" a été supprimée.`,
+            priority: 'normal',
+            relatedItemId: announcement.documentId,
+            relatedItemType: 'announcement'
+          });
+        }
+      }
+
+      // Notification INSTANTANÉE si l'annonce est rejetée par modération
+      if (result.reportStatus === 'rejected' && announcement.seller) {
+        console.log(`🚫 Annonce rejetée par modération:`, result.documentId);
+
+        const sellerId = announcement.seller.id;
+
+        if (sellerId) {
+          await strapi.service('api::notification.notification').createNotification(sellerId, {
+            type: 'announcement_moderated',
+            title: '🚫 Annonce rejetée',
+            body: `Votre annonce "${announcement.title}" a été rejetée par la modération.`,
+            priority: 'high',
+            relatedItemId: announcement.documentId,
+            relatedItemType: 'announcement'
+          });
+        }
+      }
+
     } catch (error) {
       console.error('❌ Erreur dans le lifecycle hook afterUpdate (announcement):', error);
+    }
+  },
+
+  /**
+   * Après suppression d'une annonce
+   * Notifie INSTANTANÉMENT le vendeur
+   */
+  async afterDelete(event: any) {
+    const { result } = event;
+
+    try {
+      console.log(`🗑️ Annonce ${result.documentId} supprimée définitivement`);
+
+      // Récupérer le vendeur
+      if (result.seller) {
+        const sellerId = typeof result.seller === 'object' ? result.seller.id : result.seller;
+
+        if (sellerId) {
+          await strapi.service('api::notification.notification').createNotification(sellerId, {
+            type: 'announcement_deleted',
+            title: '🗑️ Annonce supprimée',
+            body: `Votre annonce "${result.title || 'Sans titre'}" a été supprimée.`,
+            priority: 'normal',
+            relatedItemId: result.documentId,
+            relatedItemType: 'announcement'
+          });
+
+          console.log(`✅ Vendeur ${sellerId} notifié instantanément de la suppression`);
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur afterDelete announcement:', error);
     }
   }
 };

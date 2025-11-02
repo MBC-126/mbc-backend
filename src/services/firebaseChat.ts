@@ -108,6 +108,31 @@ export class FirebaseChatService {
       await conversationRef.set(conversationData);
       console.log(`✅ Nouvelle conversation créée: ${conversationId}`);
 
+      // Notifier INSTANTANÉMENT l'autre participant (user2) de la nouvelle conversation
+      // On considère que user1 est l'initiateur
+      try {
+        const itemTitle = title || 'une conversation';
+
+        await strapi.service('api::notification.notification').createNotification(user2Id, {
+          type: 'chat_conversation_created',
+          title: '💬 Nouvelle conversation',
+          body: `${user1.firstName} ${user1.lastName} a démarré une conversation avec vous${relatedItemType ? ` concernant ${itemTitle}` : ''}.`,
+          priority: 'normal',
+          relatedItemId: relatedItemId || conversationId,
+          relatedItemType: relatedItemType || 'chat',
+          data: {
+            conversationId,
+            initiatorId: user1Id,
+            initiatorName: `${user1.firstName} ${user1.lastName}`
+          }
+        });
+
+        console.log(`✅ User ${user2Id} notifié instantanément de la nouvelle conversation`);
+      } catch (notifError) {
+        console.error('❌ Erreur notification nouvelle conversation:', notifError);
+        // Ne pas bloquer la création de conversation si notification échoue
+      }
+
       return conversationId;
     } catch (error) {
       console.error('❌ Erreur createOrGetConversation:', error);

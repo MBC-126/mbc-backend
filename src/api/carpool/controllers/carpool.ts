@@ -172,6 +172,36 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
 
       console.log(`✅ Utilisateur ${user.id} a quitté le covoiturage ${carpoolId}`);
 
+      // Notifier INSTANTANÉMENT le conducteur du carpool
+      try {
+        const carpool = await strapi.db.query('api::carpool.carpool').findOne({
+          where: { id: carpoolId },
+          populate: ['driver']
+        });
+
+        if (carpool && carpool.driver) {
+          const departureInfo = `${carpool.departureLocation} → ${carpool.arrivalLocation}`;
+          const userName = user.username || 'Un passager';
+
+          await strapi.service('api::notification.notification').createNotification(
+            carpool.driver.id,
+            {
+              type: 'carpool_passenger_left',
+              title: '👋 Passager a quitté',
+              body: `${userName} a quitté votre covoiturage ${departureInfo}.`,
+              priority: 'normal',
+              relatedItemId: carpoolId.toString(),
+              relatedItemType: 'carpool'
+            }
+          );
+
+          console.log(`✅ Conducteur ${carpool.driver.id} notifié instantanément du départ du passager`);
+        }
+      } catch (notifError) {
+        console.error('❌ Erreur notification leave:', notifError);
+        // Ne pas bloquer la suppression si notification échoue
+      }
+
       return {
         success: true,
         message: 'Vous avez quitté le covoiturage.',
@@ -356,6 +386,36 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
       });
 
       console.log(`✅ Passager ${userId} retiré du covoiturage ${carpoolId}`);
+
+      // Notifier INSTANTANÉMENT le passager retiré
+      try {
+        const departureInfo = `${carpool.departureLocation} → ${carpool.arrivalLocation}`;
+        const departureTime = carpool.departureTime
+          ? new Date(carpool.departureTime).toLocaleString('fr-FR', {
+              day: 'numeric',
+              month: 'long',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : '';
+
+        await strapi.service('api::notification.notification').createNotification(
+          userId,
+          {
+            type: 'carpool_passenger_removed',
+            title: '🚫 Retiré du covoiturage',
+            body: `Vous avez été retiré du covoiturage ${departureInfo}${departureTime ? ' du ' + departureTime : ''}.`,
+            priority: 'normal',
+            relatedItemId: carpoolId.toString(),
+            relatedItemType: 'carpool'
+          }
+        );
+
+        console.log(`✅ Passager ${userId} notifié instantanément de son retrait`);
+      } catch (notifError) {
+        console.error('❌ Erreur notification removePassenger:', notifError);
+        // Ne pas bloquer le retrait si notification échoue
+      }
 
       return {
         success: true,
@@ -655,6 +715,95 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
     } catch (error) {
       console.error(`❌ Erreur lors de la suppression du covoiturage ${carpoolId}:`, error);
       return ctx.badRequest('Erreur lors de la suppression du covoiturage.');
+    }
+  },
+
+  /**
+   * Envoyer un reminder FCM pour un covoiturage
+   * Appelé par N8N 1h avant le départ
+   */
+  async sendReminder(ctx) {
+    const { id: carpoolId } = ctx.params;
+
+    try {
+      console.log(`⏰ Envoi reminder pour covoiturage ${carpoolId}`);
+
+      // Récupérer le covoiturage avec driver et passagers acceptés
+      const carpool = await strapi.db.query('api::carpool.carpool').findOne({
+        where: { id: carpoolId },
+        populate: ['driver']
+      });
+
+      if (!carpool) {
+        return ctx.notFound('Covoiturage introuvable.');
+      }
+
+      // Récupérer tous les passagers acceptés
+      const acceptedPassengers = await strapi.db.query('api::carpool-passenger.carpool-passenger').findMany({
+        where: {
+          carpool: carpoolId,
+          status: 'accepted'
+        },
+        populate: ['passenger']
+      });
+
+      const departureInfo = `${carpool.departureLocation} → ${carpool.arrivalLocation}`;
+      const departureTime = carpool.departureTime
+        ? new Date(carpool.departureTime).toLocaleString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : '';
+
+      // Préparer la liste des participants (conducteur + passagers)
+      const allParticipantIds = [
+        carpool.driver.id,
+        ...acceptedPassengers.map(p => p.passenger.id)
+      ];
+
+      // Envoyer notification FCM INSTANTANÉE à tous les participants
+      await strapi.service('api::notification.notification').createNotificationForUsers(
+        allParticipantIds,
+        {
+          type: 'carpool_reminder',
+          title: `🚗 Départ dans 1h !`,
+          body: `Rappel: Covoiturage ${departureInfo} à ${departureTime}`,
+          priority: 'high',
+          relatedItemId: carpoolId.toString(),
+          relatedItemType: 'carpool',
+          data: {
+            carpoolId,
+            departureLocation: carpool.departureLocation,
+            arrivalLocation: carpool.arrivalLocation,
+            departureTime: carpool.departureTime,
+            participantCount: allParticipantIds.length
+          }
+        }
+      );
+
+      // Marquer le reminder comme envoyé
+      const sentTypes = carpool.reminderTypesSent || [];
+      if (!sentTypes.includes('1h_before')) {
+        await strapi.db.query('api::carpool.carpool').update({
+          where: { id: carpoolId },
+          data: {
+            reminderTypesSent: [...sentTypes, '1h_before'],
+            reminderSentAt: new Date()
+          }
+        });
+      }
+
+      console.log(`✅ Reminder envoyé instantanément à ${allParticipantIds.length} participants`);
+
+      return {
+        success: true,
+        message: 'Reminder envoyé avec succès.',
+        sentTo: allParticipantIds.length
+      };
+
+    } catch (error) {
+      console.error(`❌ Erreur sendReminder covoiturage ${carpoolId}:`, error);
+      return ctx.badRequest('Erreur lors de l\'envoi du reminder.');
     }
   }
 }));

@@ -112,5 +112,67 @@ export default {
         }
       }
     }
+  },
+
+  /**
+   * Après suppression d'un carpool
+   * Notifie INSTANTANÉMENT tous les passagers acceptés
+   */
+  async afterDelete(event: any) {
+    const { result } = event;
+
+    try {
+      console.log(`🗑️ Covoiturage ${result.id} supprimé - notification aux passagers`);
+
+      // Récupérer tous les passagers acceptés du carpool
+      const acceptedPassengers = await strapi.db.query('api::carpool-passenger.carpool-passenger').findMany({
+        where: {
+          carpool: result.id,
+          status: 'accepted'
+        },
+        populate: ['passenger']
+      });
+
+      if (acceptedPassengers.length === 0) {
+        console.log(`ℹ️ Aucun passager accepté pour covoiturage ${result.id}`);
+        return;
+      }
+
+      const departureInfo = `${result.departureLocation} → ${result.arrivalLocation}`;
+      const departureTime = result.departureTime
+        ? new Date(result.departureTime).toLocaleString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : 'Date non définie';
+
+      // Notifier INSTANTANÉMENT tous les passagers acceptés
+      const passengerIds = acceptedPassengers.map(p => p.passenger.id);
+
+      await strapi.service('api::notification.notification').createNotificationForUsers(
+        passengerIds,
+        {
+          type: 'carpool_cancelled',
+          title: '🚫 Covoiturage annulé',
+          body: `Le covoiturage ${departureInfo} du ${departureTime} a été annulé par le conducteur.`,
+          priority: 'high',
+          relatedItemId: result.id.toString(),
+          relatedItemType: 'carpool',
+          data: {
+            carpoolId: result.id,
+            departureLocation: result.departureLocation,
+            arrivalLocation: result.arrivalLocation,
+            departureTime: result.departureTime
+          }
+        }
+      );
+
+      console.log(`✅ ${passengerIds.length} passagers notifiés instantanément de l'annulation`);
+
+    } catch (error) {
+      console.error('❌ Erreur afterDelete carpool:', error);
+    }
   }
 };

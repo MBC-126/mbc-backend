@@ -60,6 +60,15 @@ export default {
       method: 'PUT',
       path: '/carpools/:id/seats',
       handler: 'carpool.updateSeats',
+    },
+    // Reminder (appelé par N8N)
+    {
+      method: 'POST',
+      path: '/carpools/:id/send-reminder',
+      handler: 'carpool.sendReminder',
+      config: {
+        policies: ['global::require-api-token']
+      }
     }
   ]
 };
