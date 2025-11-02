@@ -1,4 +1,5 @@
 import { factories } from '@strapi/strapi';
+import { getFCMService } from '../../../services/fcm';
 
 export default factories.createCoreService('api::notification.notification' as any, ({ strapi }: any) => ({
 
@@ -19,7 +20,7 @@ export default factories.createCoreService('api::notification.notification' as a
       // Récupérer l'utilisateur et ses préférences
       const user = await strapi.db.query('plugin::users-permissions.user').findOne({
         where: { id: userId },
-        select: ['id', 'fcmToken', 'notificationPreferences']
+        select: ['id', 'notificationPreferences']
       });
 
       if (!user) {
@@ -61,12 +62,8 @@ export default factories.createCoreService('api::notification.notification' as a
 
       console.log(`✅ Notification créée: ${notification.id} pour user ${userId}`);
 
-      // Envoyer la push notification si token présent
-      if (user.fcmToken) {
-        await this.sendPushNotification(user.fcmToken, notification);
-      } else {
-        console.log(`⚠️ Pas de token FCM pour user ${userId} - Push notification non envoyée`);
-      }
+      // Envoyer la push notification (nouveau système device_tokens)
+      await this.sendPushNotification(userId, notification);
 
       return notification;
     } catch (error) {
@@ -96,71 +93,50 @@ export default factories.createCoreService('api::notification.notification' as a
   },
 
   /**
-   * Envoie une push notification via Firebase Cloud Messaging
+   * Envoie une push notification via FCMService (utilise device_tokens)
    */
-  async sendPushNotification(fcmToken: string, notification: any) {
+  async sendPushNotification(userId: number, notification: any) {
     try {
-      // Vérifier si Firebase Admin est configuré
-      const admin = strapi.firebaseAdmin;
-      if (!admin) {
-        console.warn('⚠️ Firebase Admin SDK non configuré - Push notification non envoyée');
+      // Récupérer tous les tokens actifs du user
+      const deviceTokens = await strapi.db.query('api::device-token.device-token').findMany({
+        where: {
+          user: userId,
+          enabled: true
+        }
+      });
+
+      if (!deviceTokens || deviceTokens.length === 0) {
+        console.log(`⚠️ Aucun device token actif pour user ${userId} - Push notification non envoyée`);
         return false;
       }
 
-      const message = {
-        notification: {
-          title: notification.title,
-          body: notification.body || ''
-        },
+      console.log(`📱 ${deviceTokens.length} device token(s) trouvé(s) pour user ${userId}`);
+
+      const tokens = deviceTokens.map(dt => dt.token);
+      const fcmService = getFCMService();
+
+      // Préparer le payload
+      const payload = {
+        title: notification.title,
+        body: notification.body || '',
         data: {
           notificationId: notification.id.toString(),
           type: notification.type,
           relatedItemId: notification.relatedItemId || '',
           relatedItemType: notification.relatedItemType || '',
-          actionUrl: notification.actionUrl || ''
-        },
-        token: fcmToken,
-        android: {
-          priority: this.getAndroidPriority(notification.priority),
-          notification: {
-            channelId: 'default',
-            sound: 'default'
-          }
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: 'default',
-              badge: 1
-            }
-          }
+          actionUrl: notification.actionUrl || '',
+          priority: notification.priority || 'normal'
         }
       };
 
-      const response = await admin.messaging().send(message);
-      console.log(`📲 Push notification envoyée: ${response}`);
+      // Envoyer via FCMService (gère automatiquement Expo + FCM natif)
+      await fcmService.sendPushToTokens(tokens, payload);
+
+      console.log(`✅ Push notification envoyée à ${tokens.length} device(s) pour user ${userId}`);
       return true;
 
     } catch (error: any) {
       console.error('❌ Erreur sendPushNotification:', error);
-
-      // Si le token est invalide, le supprimer
-      if (error.code === 'messaging/invalid-registration-token' ||
-          error.code === 'messaging/registration-token-not-registered') {
-        console.log(`🗑️ Token FCM invalide, suppression...`);
-        // Chercher l'utilisateur avec ce token et le supprimer
-        const users = await strapi.db.query('plugin::users-permissions.user').findMany({
-          where: { fcmToken }
-        });
-
-        for (const user of users) {
-          await strapi.db.query('plugin::users-permissions.user').update({
-            where: { id: user.id },
-            data: { fcmToken: null }
-          });
-        }
-      }
-
       return false;
     }
   },
@@ -212,9 +188,13 @@ export default factories.createCoreService('api::notification.notification' as a
 
       console.log(`📢 Broadcast notification à ${users.length} utilisateurs`);
 
-      // Créer une notification pour chaque utilisateur
+      // Créer une notification pour chaque utilisateur (respecte les préférences)
       const userIds = users.map(u => u.id);
-      return await this.createNotificationForUsers(userIds, notificationData);
+      const result = await this.createNotificationForUsers(userIds, notificationData);
+
+      console.log(`✅ Broadcast terminé: ${result.successful} succès, ${result.failed} échecs`);
+
+      return result;
 
     } catch (error) {
       console.error('❌ Erreur broadcastNotification:', error);

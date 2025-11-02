@@ -79,6 +79,106 @@ export default factories.createCoreController(
       );
 
       return entities;
+    },
+
+    /**
+     * Envoie les notifications planifiées (appelé par N8N via cron)
+     * Trouve les annonces avec notificationScheduledFor <= maintenant
+     * et notificationSent = false, puis envoie les notifications broadcast
+     */
+    async sendScheduledNotifications(ctx) {
+      try {
+        const now = new Date();
+        console.log(`🔔 Vérification des notifications planifiées à ${now.toISOString()}`);
+
+        // Trouver les annonces à notifier maintenant
+        const announcements = await strapi.entityService.findMany(
+          'api::important-announcement.important-announcement',
+          {
+            filters: {
+              $and: [
+                { notificationSent: false },
+                { notificationScheduledFor: { $notNull: true } },
+                { notificationScheduledFor: { $lte: now.toISOString() } }
+              ]
+            }
+          }
+        );
+
+        console.log(`📬 ${announcements.length} notification(s) planifiée(s) à envoyer`);
+
+        if (announcements.length === 0) {
+          return ctx.send({
+            success: true,
+            sent: 0,
+            message: 'Aucune notification à envoyer'
+          });
+        }
+
+        let successCount = 0;
+        let failedCount = 0;
+
+        for (const announcement of announcements) {
+          try {
+            console.log(`📤 Envoi notification pour annonce ${announcement.documentId}: ${announcement.title}`);
+
+            // Tronquer le contenu si trop long
+            const maxLength = 200;
+            const body = announcement.content.length > maxLength
+              ? announcement.content.substring(0, maxLength) + '...'
+              : announcement.content;
+
+            // Envoyer broadcast
+            const notificationResult = await strapi
+              .service('api::notification.notification')
+              .broadcastNotification({
+                type: 'important_announcement',
+                title: `${announcement.icon || '📢'} ${announcement.title}`,
+                body: body,
+                priority: 'urgent',
+                relatedItemId: announcement.documentId,
+                relatedItemType: 'announcement',
+                data: {
+                  announcementId: announcement.documentId,
+                  announcementTitle: announcement.title
+                }
+              });
+
+            console.log(
+              `✅ Notification envoyée: ${notificationResult.successful} succès, ${notificationResult.failed} échecs`
+            );
+
+            // Marquer comme envoyée
+            await strapi.entityService.update(
+              'api::important-announcement.important-announcement',
+              announcement.id,
+              {
+                data: { notificationSent: true }
+              }
+            );
+
+            successCount++;
+          } catch (error) {
+            console.error(
+              `❌ Erreur envoi notification pour annonce ${announcement.documentId}:`,
+              error
+            );
+            failedCount++;
+          }
+        }
+
+        console.log(`✅ Envoi terminé: ${successCount} succès, ${failedCount} échecs`);
+
+        return ctx.send({
+          success: true,
+          sent: successCount,
+          failed: failedCount,
+          message: `${successCount} notification(s) envoyée(s), ${failedCount} échec(s)`
+        });
+      } catch (error) {
+        console.error('❌ Erreur sendScheduledNotifications:', error);
+        return ctx.badRequest('Erreur lors de l\'envoi des notifications planifiées');
+      }
     }
   })
 );

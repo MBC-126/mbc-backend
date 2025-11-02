@@ -66,6 +66,11 @@
       "type": "boolean",
       "default": false,
       "description": "Indique si une notification a déjà été envoyée pour cette annonce (pour les priorités high/very high)"
+    },
+    "notificationScheduledFor": {
+      "type": "datetime",
+      "required": false,
+      "description": "Date et heure à laquelle la notification doit être envoyée. Utilisé pour les annonces lointaines (> 10 jours) qui doivent être notifiées à J-10."
     }
   }
 }
