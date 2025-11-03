@@ -128,7 +128,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
       const managerIds = infra.managers.map((m: any) => m.id);
       const tokens = await strapi.db.query('api::device-token.device-token').findMany({
         where: {
-          user_id: { $in: managerIds },
+          user: { id: { $in: managerIds } },
           enabled: true
         }
       });
@@ -192,7 +192,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
 
     const tokens = await strapi.db.query('api::device-token.device-token').findMany({
       where: {
-        user_id: reservation.user.id,
+        user: { id: reservation.user.id },
         enabled: true
       }
     });
@@ -260,7 +260,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
 
     const tokens = await strapi.db.query('api::device-token.device-token').findMany({
       where: {
-        user_id: reservation.user.id,
+        user: { id: reservation.user.id },
         enabled: true
       }
     });
@@ -333,7 +333,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
         const managerIds = infra.managers.map((m: any) => m.id);
         const tokens = await strapi.db.query('api::device-token.device-token').findMany({
           where: {
-            user_id: { $in: managerIds },
+            user: { id: { $in: managerIds } },
             enabled: true
           }
         });
@@ -358,7 +358,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
       // Notifier le demandeur
       const tokens = await strapi.db.query('api::device-token.device-token').findMany({
         where: {
-          user_id: reservation.user.id,
+          user: { id: reservation.user.id },
           enabled: true
         }
       });

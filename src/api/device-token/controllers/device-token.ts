@@ -84,7 +84,7 @@ export default factories.createCoreController('api::device-token.device-token', 
 
     try {
       const existing = await strapi.db.query('api::device-token.device-token').findOne({
-        where: { token, user_id: userId }
+        where: { token, user: { id: userId } }
       });
 
       if (!existing) {

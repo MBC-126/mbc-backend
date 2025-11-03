@@ -100,7 +100,7 @@ export default factories.createCoreService('api::notification.notification' as a
       // Récupérer tous les tokens actifs du user
       const deviceTokens = await strapi.db.query('api::device-token.device-token').findMany({
         where: {
-          user: userId,
+          user: { id: userId },
           enabled: true
         }
       });
