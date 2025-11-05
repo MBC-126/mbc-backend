@@ -5,5 +5,3 @@ build/
 node_modules/
 .env
 .git
-Dockerfile*
-docker-compose*
