@@ -119,36 +119,10 @@ export default factories.createCoreController('api::reservation.reservation' as 
 
     const response = await super.create(ctx);
 
-    // Envoyer notification aux managers si bookingRules activé
-    if (infra.bookingRules && infra.managers && infra.managers.length > 0) {
-      const { getFCMService } = require('../../../services/fcm');
-      const fcm = getFCMService();
-
-      // Récupérer les tokens des managers
-      const managerIds = infra.managers.map((m: any) => m.id);
-      const tokens = await strapi.db.query('api::device-token.device-token').findMany({
-        where: {
-          user: { id: { $in: managerIds } },
-          enabled: true
-        }
-      });
-
-      if (tokens.length > 0) {
-        await fcm.sendPushToTokens(
-          tokens.map((t: any) => t.token),
-          {
-            title: 'Nouvelle réservation en attente',
-            body: `${user.firstName} ${user.lastName} souhaite réserver ${infra.name}`,
-            data: {
-              screen: 'ManagerInbox',
-              infrastructureId: infrastructure.toString(),
-              reservationId: response.data.id.toString(),
-              type: 'reservation_pending'
-            }
-          }
-        );
-      }
-    }
+    // NOTE: Notification aux managers est maintenant gérée par le lifecycle hook afterCreate
+    // pour éviter les doublons. Le hook utilise le service de notification qui gère
+    // à la fois l'enregistrement en DB et l'envoi FCM.
+    // Voir: src/api/reservation/content-types/reservation/lifecycles.ts
 
     return response;
   },
@@ -245,16 +219,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
       return ctx.badRequest('Cette réservation ne peut plus être rejetée');
     }
 
-    // Mettre à jour le statut
-    await strapi.db.query('api::reservation.reservation').update({
-      where: { id },
-      data: {
-        etatReservation: 'rejected',
-        rejection_reason
-      }
-    });
-
-    // Envoyer notification au demandeur
+    // Envoyer notification au demandeur AVANT de supprimer
     const { getFCMService } = require('../../../services/fcm');
     const fcm = getFCMService();
 
@@ -272,15 +237,19 @@ export default factories.createCoreController('api::reservation.reservation' as 
           title: 'Réservation refusée',
           body: `Votre réservation de ${reservation.infrastructure.name} a été refusée: ${rejection_reason}`,
           data: {
-            screen: 'BookingDetails',
-            reservationId: id.toString(),
+            screen: 'BookingHistory',
             type: 'reservation_rejected'
           }
         }
       );
     }
 
-    return ctx.send({ data: { id, etatReservation: 'rejected', rejection_reason } });
+    // Supprimer la réservation (pas besoin de garder une trace)
+    await strapi.db.query('api::reservation.reservation').delete({
+      where: { id }
+    });
+
+    return ctx.send({ data: { success: true, message: 'Réservation supprimée' } });
   },
 
   /**
@@ -310,13 +279,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
 
     // Vérifier droits (déjà fait par policy is-requester-or-manager)
 
-    // Mettre à jour le statut
-    await strapi.db.query('api::reservation.reservation').update({
-      where: { id },
-      data: { etatReservation: 'cancelled' }
-    });
-
-    // Envoyer notification à l'autre partie
+    // Envoyer notification à l'autre partie AVANT de supprimer
     const { getFCMService } = require('../../../services/fcm');
     const fcm = getFCMService();
 
@@ -347,7 +310,6 @@ export default factories.createCoreController('api::reservation.reservation' as 
               data: {
                 screen: 'ManagerInbox',
                 infrastructureId: reservation.infrastructure.id.toString(),
-                reservationId: id.toString(),
                 type: 'reservation_cancelled'
               }
             }
@@ -370,8 +332,7 @@ export default factories.createCoreController('api::reservation.reservation' as 
             title: 'Réservation annulée',
             body: `Votre réservation de ${reservation.infrastructure.name} a été annulée par un gestionnaire`,
             data: {
-              screen: 'BookingDetails',
-              reservationId: id.toString(),
+              screen: 'BookingHistory',
               type: 'reservation_cancelled'
             }
           }
@@ -379,7 +340,12 @@ export default factories.createCoreController('api::reservation.reservation' as 
       }
     }
 
-    return ctx.send({ data: { id, etatReservation: 'cancelled' } });
+    // Supprimer la réservation (pas besoin de garder une trace des annulations)
+    await strapi.db.query('api::reservation.reservation').delete({
+      where: { id }
+    });
+
+    return ctx.send({ data: { success: true, message: 'Réservation supprimée' } });
   },
 
   /**
