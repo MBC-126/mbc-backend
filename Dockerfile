@@ -23,12 +23,19 @@ RUN yarn build
 FROM node:20-alpine
 WORKDIR /opt/app
 
+# Labels pour métadonnées et traçabilité
+LABEL org.opencontainers.image.title="MBC Backend API"
+LABEL org.opencontainers.image.description="Strapi backend pour Ma Base Connectée"
+LABEL org.opencontainers.image.vendor="MBC-126"
+LABEL org.opencontainers.image.source="https://github.com/MBC-126/mbc-backend"
+LABEL org.opencontainers.image.documentation="https://github.com/MBC-126/mbc-backend/blob/main/README-DEPLOY-CI.md"
+
 ENV NODE_ENV=production
 # Même dépendances que build, mais côté runtime on ne garde que prod
 COPY package.json yarn.lock ./
 RUN corepack enable && yarn install --frozen-lockfile --production --ignore-platform
 
-# Copie l’app construite
+# Copie l'app construite
 COPY --from=build /opt/app ./
 
 # Exposition & commande
