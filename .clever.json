@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "app_id": "app_596f177d-c0ee-49a5-9022-4be4c53be87f",
+      "org_id": "orga_2efd76fd-40b2-4d2d-b1cf-08fb24141df8",
+      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_596f177d-c0ee-49a5-9022-4be4c53be87f.git",
+      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_596f177d-c0ee-49a5-9022-4be4c53be87f.git",
+      "name": "mbc-backend",
+      "alias": "mbc-backend"
+    }
+  ]
+}

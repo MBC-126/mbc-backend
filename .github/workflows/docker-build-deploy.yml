@@ -62,19 +62,30 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Trigger Clever Cloud deployment
+      - name: Trigger Clever Cloud deployment via webhook
         run: |
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -u "${{ secrets.CLEVER_TOKEN }}:${{ secrets.CLEVER_SECRET }}" \
-            "https://api.clever-cloud.com/v2/organisations/${{ secrets.CLEVER_ORG_ID }}/applications/${{ secrets.CLEVER_APP_ID }}/instances" \
-            -d '{
-              "commit": "${{ github.sha }}",
-              "withEnv": true
-            }'
+          # Utilise le webhook de redéploiement Clever Cloud
+          # Plus simple et plus fiable que l'API REST
+          if [ -n "${{ secrets.CLEVER_WEBHOOK_URL }}" ]; then
+            echo "🔄 Triggering deployment via webhook..."
+            curl -X POST "${{ secrets.CLEVER_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "source": "github-actions",
+                "commit": "${{ github.sha }}",
+                "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+              }'
+            echo "✅ Webhook called successfully"
+          else
+            echo "⚠️ CLEVER_WEBHOOK_URL not set - skipping auto-deploy"
+            echo "ℹ️ You can manually deploy on Clever Cloud dashboard"
+          fi
 
-      - name: Deployment triggered
+      - name: Deployment info
         run: |
-          echo "✅ Clever Cloud deployment triggered successfully"
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          echo "Commit: ${{ github.sha }}"
+          echo "📦 Image built and pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "🔖 Commit: ${{ github.sha }}"
+          echo ""
+          echo "To deploy manually:"
+          echo "  1. Go to Clever Cloud dashboard"
+          echo "  2. Restart the application (it will pull the latest image)"

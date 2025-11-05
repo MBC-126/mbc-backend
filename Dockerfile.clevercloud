@@ -1,0 +1,11 @@
+# Dockerfile pour Clever Cloud
+# Utilise l'image pré-construite par GitHub Actions
+# Cela évite le build gourmand en mémoire sur Clever Cloud
+
+FROM ghcr.io/mbc-126/mbc-backend:latest
+
+# Exposition du port
+EXPOSE 8080
+
+# La commande est déjà définie dans l'image de base
+CMD ["yarn", "start"]

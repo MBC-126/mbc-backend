@@ -1,0 +1,16 @@
+{
+  "type": "docker",
+  "build": {
+    "type": "docker",
+    "imageName": "ghcr.io/mbc-126/mbc-backend:latest"
+  },
+  "deploy": {
+    "container": {
+      "image": "ghcr.io/mbc-126/mbc-backend:latest",
+      "port": 8080,
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

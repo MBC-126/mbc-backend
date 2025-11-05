@@ -1,0 +1,89 @@
+name: Build & Deploy to Clever-Cloud (Docker)
+
+on:
+  push:
+    branches: ['main']
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write   # push vers GHCR
+
+env:
+  IMAGE_NAME: ghcr.io/mbc-126/mbc-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR (push)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Meta (tags/labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build & Push (Dockerfile complet dans ci/)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ci/Dockerfile    # Dockerfile complet
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compose immutable image URI (digest)
+        id: img
+        run: echo "uri=${{ env.IMAGE_NAME }}@${{ needs.build.outputs.digest }}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Clever-Cloud
+        uses: 47ng/actions-clever-cloud@v2.1.0
+        with:
+          alias: mbc-backend
+          sameCommitPolicy: rebuild
+          setEnv: |
+            # Connexion de Clever-Cloud au registry privé (GHCR)
+            CC_DOCKER_LOGIN_SERVER=ghcr.io
+            CC_DOCKER_LOGIN_USERNAME=${{ github.actor }}
+            CC_DOCKER_LOGIN_PASSWORD=${{ secrets.GHCR_READ_TOKEN }}
+
+            # Image exacte à déployer (passée au Dockerfile minimal via ARG IMAGE)
+            IMAGE=${{ steps.img.outputs.uri }}
+
+            # Port exposé (ajuste si besoin)
+            CC_DOCKER_EXPOSED_HTTP_PORT=8080
+        env:
+          CLEVER_TOKEN: ${{ secrets.CLEVER_TOKEN }}
+          CLEVER_SECRET: ${{ secrets.CLEVER_SECRET }}
