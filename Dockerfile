@@ -3,7 +3,7 @@
 # GitHub Actions build l'image complète depuis ci/Dockerfile et la push vers GHCR
 # Clever-Cloud pull cette image pré-construite via ARG IMAGE
 
-ARG IMAGE
+ARG IMAGE=ghcr.io/mbc-126/mbc-backend:latest
 FROM ${IMAGE}
 
 # Le port et la commande sont déjà définis dans l'image de base
