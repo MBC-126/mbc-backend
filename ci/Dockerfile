@@ -39,5 +39,7 @@ RUN corepack enable && yarn install --frozen-lockfile --production --ignore-plat
 COPY --from=build /opt/app ./
 
 # Exposition & commande
-EXPOSE 1337
+# Port 8080 pour Clever Cloud
+ENV PORT=8080
+EXPOSE 8080
 CMD ["yarn", "start"]
