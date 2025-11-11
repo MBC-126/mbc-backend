@@ -76,3 +76,5 @@ scaleway-env-vars.json
 Delete mbc-fire-firebase-adminsdk-fbsvc-5be4eabccd.json
 mbc-fire-firebase-adminsdk-fbsvc-5be4eabccd.json
 .DS_Store
+*.md
+*.sh
