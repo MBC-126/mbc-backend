@@ -1,0 +1,69 @@
+# Dockerfile ultra-optimisé pour Clever Cloud avec contraintes mémoire
+# Utilise ce fichier si le build échoue même avec dedicated build instance
+# Pour l'utiliser: clever env set CC_DOCKERFILE "Dockerfile.lowmem"
+
+# ---- build admin ----
+FROM node:20-alpine AS build
+WORKDIR /opt/app
+
+# Copie manifest + lock d'abord pour maximiser le cache
+COPY package.json yarn.lock ./
+
+# Evite les addons natifs qui râlent : libc6-compat (utile pour sharp, etc.)
+RUN apk add --no-cache libc6-compat
+
+# OPTIMISATION: Yarn install avec cache agressif
+RUN corepack enable && \
+    yarn config set network-timeout 300000 && \
+    yarn install --frozen-lockfile --ignore-platform --network-concurrency 1
+
+# Copie le reste du code
+COPY . .
+
+# Build Strapi en mode production avec optimisations agressives
+# OPTIMISATIONS MÉMOIRE MAXIMALES:
+# - NODE_OPTIONS limite heap à 1GB (minimum pour Strapi build)
+# - Vite/Rollup en mode single-threaded
+# - Désactive source maps pour économiser mémoire
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=1024 --optimize-for-size --stack-size=1024"
+ENV GENERATE_SOURCEMAP=false
+ENV CI=true
+
+# Build par étapes pour éviter OOM
+RUN echo "📦 Building Strapi backend..." && \
+    yarn strapi build --no-optimization && \
+    echo "✅ Build complete"
+
+
+# ---- runtime ----
+FROM node:20-alpine
+WORKDIR /opt/app
+
+# Labels
+LABEL org.opencontainers.image.title="MBC Backend API (LowMem)"
+LABEL org.opencontainers.image.description="Strapi backend optimisé mémoire"
+LABEL org.opencontainers.image.vendor="MBC-126"
+
+ENV NODE_ENV=production
+
+# Install production dependencies
+COPY package.json yarn.lock ./
+RUN corepack enable && \
+    yarn install --frozen-lockfile --production --ignore-platform
+
+# Copie l'app construite
+COPY --from=build /opt/app ./
+
+# Configuration serveur
+ENV HOST=0.0.0.0
+ENV PORT=8080
+EXPOSE 8080
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://0.0.0.0:8080/_health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
+
+# Runtime optimisé
+ENV NODE_OPTIONS="--max-old-space-size=384"
+CMD ["yarn", "start"]

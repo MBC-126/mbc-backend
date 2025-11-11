@@ -15,7 +15,11 @@ RUN corepack enable && yarn install --frozen-lockfile --ignore-platform
 COPY . .
 
 # Build Strapi en mode production (admin, schemas…)
+# OPTIMISATIONS MÉMOIRE:
+# - NODE_OPTIONS limite la heap à 1.5GB
+# - --max-old-space-size=1536 pour le build Vite
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN yarn build
 
 
@@ -47,4 +51,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://0.0.0.0:8080/_health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
 
+# Runtime avec moins de mémoire (512MB devrait suffire)
+ENV NODE_OPTIONS="--max-old-space-size=512"
 CMD ["yarn", "start"]
