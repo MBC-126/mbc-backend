@@ -29,6 +29,12 @@ export default ({ strapi }) => ({
       // @ts-ignore
       const decodedToken = await strapi.service('api::auth.auth').validateProConnectToken(id_token);
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 ID TOKEN DECODED (proconnectLogin)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(JSON.stringify(decodedToken, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       // 2. Récupérer et décoder le userinfo
       const userinfoResponse = await axios.get(
         `${PROCONNECT_BASE_URL}/api/v2/userinfo`,
@@ -39,6 +45,14 @@ export default ({ strapi }) => ({
         }
       );
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 USERINFO ENDPOINT RESPONSE (proconnectLogin)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('Status:', userinfoResponse.status);
+      console.log('Content-Type:', userinfoResponse.headers['content-type']);
+      console.log('Raw Data:', JSON.stringify(userinfoResponse.data, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       let userInfo: any;
       const contentType = userinfoResponse.headers['content-type'] || '';
 
@@ -46,8 +60,10 @@ export default ({ strapi }) => ({
       if (contentType.includes('application/jwt') || typeof userinfoResponse.data === 'string') {
         // @ts-ignore
         userInfo = await strapi.service('api::auth.auth').validateProConnectToken(userinfoResponse.data);
+        console.log('UserInfo après décodage JWT:', JSON.stringify(userInfo, null, 2));
       } else {
         userInfo = userinfoResponse.data;
+        console.log('UserInfo (JSON direct):', JSON.stringify(userInfo, null, 2));
       }
 
       // 4. Fusionner les données
@@ -55,6 +71,12 @@ export default ({ strapi }) => ({
         ...decodedToken,
         ...userInfo,
       };
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 COMPLETE USER DATA (proconnectLogin - après fusion)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(JSON.stringify(completeUserData, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // 5. Créer ou récupérer l'utilisateur
       const user = await strapi.service('api::auth.auth').findOrCreateUser(completeUserData);
@@ -160,6 +182,12 @@ export default ({ strapi }) => ({
       // @ts-ignore
       const decodedToken = await strapi.service('api::auth.auth').validateProConnectToken(id_token);
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 ID TOKEN DECODED');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(JSON.stringify(decodedToken, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       // 3. Récupérer le userinfo
       const userinfoResponse = await axios.get(
         `${PROCONNECT_BASE_URL}/api/v2/userinfo`,
@@ -170,14 +198,24 @@ export default ({ strapi }) => ({
         }
       );
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 USERINFO ENDPOINT RESPONSE');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('Status:', userinfoResponse.status);
+      console.log('Content-Type:', userinfoResponse.headers['content-type']);
+      console.log('Raw Data:', JSON.stringify(userinfoResponse.data, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       let userInfo: any;
       const contentType = userinfoResponse.headers['content-type'] || '';
 
       if (contentType.includes('application/jwt') || typeof userinfoResponse.data === 'string') {
         // @ts-ignore
         userInfo = await strapi.service('api::auth.auth').validateProConnectToken(userinfoResponse.data);
+        console.log('UserInfo après décodage JWT:', JSON.stringify(userInfo, null, 2));
       } else {
         userInfo = userinfoResponse.data;
+        console.log('UserInfo (JSON direct):', JSON.stringify(userInfo, null, 2));
       }
 
       // 4. Fusionner les données
@@ -185,6 +223,12 @@ export default ({ strapi }) => ({
         ...decodedToken,
         ...userInfo,
       };
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔍 COMPLETE USER DATA (après fusion)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(JSON.stringify(completeUserData, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // 5. Créer ou récupérer l'utilisateur
       const user = await strapi.service('api::auth.auth').findOrCreateUser(completeUserData);
