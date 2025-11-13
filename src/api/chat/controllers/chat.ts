@@ -5,12 +5,7 @@
 
 import FirebaseChatService from '../../../services/firebaseChat';
 
-// Type helper pour accéder à firebaseAdmin
-interface StrapiWithFirebase {
-  firebaseAdmin: any;
-}
-
-const getFirebaseAdmin = () => (strapi as unknown as StrapiWithFirebase).firebaseAdmin;
+const getFirebaseAdmin = () => strapi.config.get('firebase.admin');
 
 export default {
   /**

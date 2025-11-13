@@ -59,6 +59,14 @@ export default factories.createCoreController('api::device-token.device-token', 
         `, [deviceToken.id, userId]);
       }
 
+      // AUSSI enregistrer dans user.fcmToken pour compatibilité avec le système de notifications
+      await strapi.db.query('plugin::users-permissions.user').update({
+        where: { id: userId },
+        data: { fcmToken: token }
+      });
+
+      console.log(`✅ Token FCM enregistré pour user ${userId} (device-token + user.fcmToken)`);
+
       return { data: deviceToken };
     } catch (err: any) {
       console.error('❌ Erreur enregistrement device token:', err);
