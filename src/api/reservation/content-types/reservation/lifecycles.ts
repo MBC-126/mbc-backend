@@ -131,8 +131,9 @@ export default {
 
       // Notification INSTANTANÉE si annulée
       if (newStatus === 'cancelled') {
-        console.log(`🚫 Réservation ${result.id} annulée - envoi notification instantanée à user ${userId}`);
+        console.log(`🚫 Réservation ${result.id} annulée - envoi notifications`);
 
+        // Notifier l'utilisateur
         await strapi.service('api::notification.notification').createNotification(userId, {
           type: 'reservation_cancelled',
           title: 'Réservation annulée 🚫',
@@ -141,6 +142,39 @@ export default {
           relatedItemId: result.id.toString(),
           relatedItemType: 'reservation'
         });
+
+        // Notifier également les managers de l'infrastructure
+        const infraWithManagers = await strapi.db.query('api::infrastructure.infrastructure').findOne({
+          where: { id: reservation.infrastructure.id },
+          populate: ['managers']
+        });
+
+        if (infraWithManagers?.managers && infraWithManagers.managers.length > 0) {
+          const managerIds = infraWithManagers.managers.map((m: any) => m.id);
+          const userName = reservation.user?.firstName
+            ? `${reservation.user.firstName} ${reservation.user.lastName || ''}`.trim()
+            : reservation.user?.username || 'Un utilisateur';
+
+          await strapi.service('api::notification.notification').createNotificationForUsers(
+            managerIds,
+            {
+              type: 'reservation_cancelled_manager',
+              title: '🚫 Réservation annulée',
+              body: `${userName} a annulé sa réservation de ${infraName} le ${startTime}`,
+              priority: 'normal',
+              relatedItemId: result.id.toString(),
+              relatedItemType: 'reservation',
+              data: {
+                reservationId: result.id,
+                infrastructureName: infraName,
+                userName: userName,
+                startTime: reservation.startTime
+              }
+            }
+          );
+
+          console.log(`✅ Managers notifiés de l'annulation`);
+        }
       }
     } catch (error) {
       console.error('❌ Erreur dans le lifecycle hook afterUpdate (reservation):', error);

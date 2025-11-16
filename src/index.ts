@@ -1,3 +1,5 @@
+import { startAllCronJobs } from './services/cron';
+
 export default {
   /**
    * An asynchronous register function that runs before
@@ -20,12 +22,15 @@ export default {
     console.log('🚀 [STRAPI] Bootstrap phase - démarrage...');
     console.log('🚀 [STRAPI] Host:', strapi.config.get('server.host'));
     console.log('🚀 [STRAPI] Port:', strapi.config.get('server.port'));
-    
+
     // Log when server is about to start
     strapi.server.httpServer.on('listening', () => {
       const { host, port } = strapi.config.get('server');
       console.log(`✅ [STRAPI] Serveur HTTP démarré sur ${host}:${port}`);
     });
+
+    // Démarrer les crons personnalisés (notifications planifiées, nettoyages, etc.)
+    startAllCronJobs(strapi);
 
     console.log('✅ [STRAPI] Bootstrap terminé');
   },

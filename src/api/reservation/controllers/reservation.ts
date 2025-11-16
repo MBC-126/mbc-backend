@@ -160,31 +160,8 @@ export default factories.createCoreController('api::reservation.reservation' as 
       data: { etatReservation: 'confirmed' }
     });
 
-    // Envoyer notification au demandeur
-    const { getFCMService } = require('../../../services/fcm');
-    const fcm = getFCMService();
-
-    const tokens = await strapi.db.query('api::device-token.device-token').findMany({
-      where: {
-        user: { id: reservation.user.id },
-        enabled: true
-      }
-    });
-
-    if (tokens.length > 0) {
-      await fcm.sendPushToTokens(
-        tokens.map((t: any) => t.token),
-        {
-          title: 'Réservation confirmée',
-          body: `Votre réservation de ${reservation.infrastructure.name} a été confirmée`,
-          data: {
-            screen: 'BookingDetails',
-            reservationId: id.toString(),
-            type: 'reservation_confirmed'
-          }
-        }
-      );
-    }
+    // NOTE: La notification est envoyée automatiquement par le lifecycle hook afterUpdate
+    // qui utilise createNotification() pour créer l'entrée en DB et envoyer via Firebase
 
     return ctx.send({ data: { id, etatReservation: 'confirmed' } });
   },
@@ -219,37 +196,17 @@ export default factories.createCoreController('api::reservation.reservation' as 
       return ctx.badRequest('Cette réservation ne peut plus être rejetée');
     }
 
-    // Envoyer notification au demandeur AVANT de supprimer
-    const { getFCMService } = require('../../../services/fcm');
-    const fcm = getFCMService();
-
-    const tokens = await strapi.db.query('api::device-token.device-token').findMany({
-      where: {
-        user: { id: reservation.user.id },
-        enabled: true
+    // Mettre à jour le statut et la raison du rejet
+    // NOTE: La notification est envoyée automatiquement par le lifecycle hook afterUpdate
+    await strapi.db.query('api::reservation.reservation').update({
+      where: { id },
+      data: {
+        etatReservation: 'rejected',
+        rejection_reason
       }
     });
 
-    if (tokens.length > 0) {
-      await fcm.sendPushToTokens(
-        tokens.map((t: any) => t.token),
-        {
-          title: 'Réservation refusée',
-          body: `Votre réservation de ${reservation.infrastructure.name} a été refusée: ${rejection_reason}`,
-          data: {
-            screen: 'BookingHistory',
-            type: 'reservation_rejected'
-          }
-        }
-      );
-    }
-
-    // Supprimer la réservation (pas besoin de garder une trace)
-    await strapi.db.query('api::reservation.reservation').delete({
-      where: { id }
-    });
-
-    return ctx.send({ data: { success: true, message: 'Réservation supprimée' } });
+    return ctx.send({ data: { success: true, message: 'Réservation rejetée' } });
   },
 
   /**
@@ -279,73 +236,14 @@ export default factories.createCoreController('api::reservation.reservation' as 
 
     // Vérifier droits (déjà fait par policy is-requester-or-manager)
 
-    // Envoyer notification à l'autre partie AVANT de supprimer
-    const { getFCMService } = require('../../../services/fcm');
-    const fcm = getFCMService();
-
-    const isRequester = reservation.user.id === user.id;
-
-    if (isRequester) {
-      // Notifier les managers
-      const infra = await strapi.db.query('api::infrastructure.infrastructure').findOne({
-        where: { id: reservation.infrastructure.id },
-        populate: ['managers']
-      });
-
-      if (infra && infra.managers && infra.managers.length > 0) {
-        const managerIds = infra.managers.map((m: any) => m.id);
-        const tokens = await strapi.db.query('api::device-token.device-token').findMany({
-          where: {
-            user: { id: { $in: managerIds } },
-            enabled: true
-          }
-        });
-
-        if (tokens.length > 0) {
-          await fcm.sendPushToTokens(
-            tokens.map((t: any) => t.token),
-            {
-              title: 'Réservation annulée',
-              body: `${user.firstName} ${user.lastName} a annulé sa réservation de ${infra.name}`,
-              data: {
-                screen: 'ManagerInbox',
-                infrastructureId: reservation.infrastructure.id.toString(),
-                type: 'reservation_cancelled'
-              }
-            }
-          );
-        }
-      }
-    } else {
-      // Notifier le demandeur
-      const tokens = await strapi.db.query('api::device-token.device-token').findMany({
-        where: {
-          user: { id: reservation.user.id },
-          enabled: true
-        }
-      });
-
-      if (tokens.length > 0) {
-        await fcm.sendPushToTokens(
-          tokens.map((t: any) => t.token),
-          {
-            title: 'Réservation annulée',
-            body: `Votre réservation de ${reservation.infrastructure.name} a été annulée par un gestionnaire`,
-            data: {
-              screen: 'BookingHistory',
-              type: 'reservation_cancelled'
-            }
-          }
-        );
-      }
-    }
-
-    // Supprimer la réservation (pas besoin de garder une trace des annulations)
-    await strapi.db.query('api::reservation.reservation').delete({
-      where: { id }
+    // Mettre à jour le statut
+    // NOTE: La notification est envoyée automatiquement par le lifecycle hook afterUpdate
+    await strapi.db.query('api::reservation.reservation').update({
+      where: { id },
+      data: { etatReservation: 'cancelled' }
     });
 
-    return ctx.send({ data: { success: true, message: 'Réservation supprimée' } });
+    return ctx.send({ data: { success: true, message: 'Réservation annulée' } });
   },
 
   /**
