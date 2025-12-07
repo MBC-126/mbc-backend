@@ -79,3 +79,4 @@ mbc-fire-firebase-adminsdk-fbsvc-5be4eabccd.json
 *.md
 *.sh
 check-env.js
+*.dump
