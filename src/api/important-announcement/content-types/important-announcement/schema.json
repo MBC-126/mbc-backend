@@ -24,7 +24,7 @@
     "icon": {
       "type": "string",
       "required": false,
-      "maxLength": 10,
+      "maxLength": 50,
       "default": "📢"
     },
     "order": {
