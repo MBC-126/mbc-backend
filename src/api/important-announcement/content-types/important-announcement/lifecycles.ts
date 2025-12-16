@@ -34,7 +34,7 @@ export default {
 
       const notificationData = {
         type: 'important_announcement',
-        title: `${icon || '📢'} ${title}`,
+        title: title,
         body: body,
         priority: 'urgent' as const,
         relatedItemId: result.documentId,

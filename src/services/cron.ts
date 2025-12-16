@@ -97,7 +97,7 @@ async function checkExpiringAnnouncements(strapi: any) {
       if (announcement.seller && announcement.seller.id) {
         await strapi.service('api::notification.notification').createNotification(announcement.seller.id, {
           type: 'announcement_expiring',
-          title: 'Annonce bientôt expirée ⏰',
+          title: 'Annonce bientôt expirée',
           body: `Votre annonce "${announcement.title}" expire dans 3 jours.`,
           priority: 'normal',
           relatedItemId: announcement.documentId,
@@ -152,13 +152,14 @@ async function sendReservationReminders(strapi: any) {
       if (reservation.user && reservation.user.id) {
         const infraName = reservation.infrastructure?.name || 'Infrastructure';
         const startTime = new Date(reservation.startTime).toLocaleString('fr-FR', {
+          timeZone: 'Europe/Paris',
           hour: '2-digit',
           minute: '2-digit'
         });
 
         await strapi.service('api::notification.notification').createNotification(reservation.user.id, {
           type: 'reservation_reminder',
-          title: 'Rappel réservation demain 📅',
+          title: 'Rappel réservation demain',
           body: `N'oubliez pas votre réservation pour ${infraName} demain à ${startTime}.`,
           priority: 'normal',
           relatedItemId: reservation.id.toString(),
@@ -368,14 +369,10 @@ async function sendImportantAnnouncementsNotifications(strapi: any) {
 
     for (const announcement of announcements) {
       try {
-        // Déterminer l'icône selon la priorité
-        const priorityIcon = announcement.priority === 'very high' ? '🚨' : '⚠️';
-        const icon = announcement.icon || '📢';
-
         // Envoyer une notification broadcast à tous les utilisateurs
         await strapi.service('api::notification.notification').broadcastNotification({
           type: 'important_announcement',
-          title: `${priorityIcon} ${icon} ${announcement.title}`,
+          title: announcement.title,
           body: announcement.content,
           priority: announcement.priority === 'very high' ? 'urgent' : 'high',
           relatedItemId: announcement.documentId || announcement.id.toString(),

@@ -141,6 +141,7 @@ export default {
       const departureInfo = `${result.departureLocation} → ${result.arrivalLocation}`;
       const departureTime = result.departureTime
         ? new Date(result.departureTime).toLocaleString('fr-FR', {
+            timeZone: 'Europe/Paris',
             day: 'numeric',
             month: 'long',
             hour: '2-digit',
@@ -155,7 +156,7 @@ export default {
         passengerIds,
         {
           type: 'carpool_cancelled',
-          title: '🚫 Covoiturage annulé',
+          title: 'Covoiturage annulé',
           body: `Le covoiturage ${departureInfo} du ${departureTime} a été annulé par le conducteur.`,
           priority: 'high',
           relatedItemId: result.id.toString(),

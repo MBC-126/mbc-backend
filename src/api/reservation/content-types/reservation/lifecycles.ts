@@ -27,6 +27,7 @@ export default {
       const infraName = reservation.infrastructure.name || 'Infrastructure';
       const userName = reservation.user?.username || 'Un utilisateur';
       const startTime = new Date(reservation.startTime).toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris',
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -46,7 +47,7 @@ export default {
           managerIds,
           {
             type: 'reservation_request',
-            title: '📅 Nouvelle demande de réservation',
+            title: 'Nouvelle demande de réservation',
             body: `${userName} demande à réserver ${infraName} le ${startTime}`,
             priority: 'high',
             relatedItemId: result.id.toString(),
@@ -91,6 +92,7 @@ export default {
       const userId = reservation.user.id;
       const infraName = reservation.infrastructure?.name || 'Infrastructure';
       const startTime = new Date(reservation.startTime).toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris',
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -107,7 +109,7 @@ export default {
 
         await strapi.service('api::notification.notification').createNotification(userId, {
           type: 'reservation_confirmed',
-          title: 'Réservation confirmée ✅',
+          title: 'Réservation confirmée',
           body: `Votre réservation pour ${infraName} le ${startTime} a été confirmée.`,
           priority: 'high',
           relatedItemId: result.id.toString(),
@@ -121,7 +123,7 @@ export default {
 
         await strapi.service('api::notification.notification').createNotification(userId, {
           type: 'reservation_rejected',
-          title: 'Réservation refusée ❌',
+          title: 'Réservation refusée',
           body: `Votre réservation pour ${infraName} le ${startTime} a été refusée.`,
           priority: 'normal',
           relatedItemId: result.id.toString(),
@@ -136,7 +138,7 @@ export default {
         // Notifier l'utilisateur
         await strapi.service('api::notification.notification').createNotification(userId, {
           type: 'reservation_cancelled',
-          title: 'Réservation annulée 🚫',
+          title: 'Réservation annulée',
           body: `Votre réservation pour ${infraName} le ${startTime} a été annulée.`,
           priority: 'normal',
           relatedItemId: result.id.toString(),
@@ -159,7 +161,7 @@ export default {
             managerIds,
             {
               type: 'reservation_cancelled_manager',
-              title: '🚫 Réservation annulée',
+              title: 'Réservation annulée',
               body: `${userName} a annulé sa réservation de ${infraName} le ${startTime}`,
               priority: 'normal',
               relatedItemId: result.id.toString(),

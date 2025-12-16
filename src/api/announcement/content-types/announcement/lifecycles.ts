@@ -45,7 +45,7 @@ export default {
         if (buyerId) {
           await strapi.service('api::notification.notification').createNotification(buyerId, {
             type: 'announcement_message',
-            title: 'Annonce vendue ✅',
+            title: 'Annonce vendue',
             body: `L'annonce "${announcement.title}" vous a été vendue !`,
             priority: 'normal',
             relatedItemId: announcement.documentId,
@@ -57,7 +57,7 @@ export default {
         if (sellerId && sellerId !== buyerId) {
           await strapi.service('api::notification.notification').createNotification(sellerId, {
             type: 'announcement_message',
-            title: 'Annonce vendue ✅',
+            title: 'Annonce vendue',
             body: `Votre annonce "${announcement.title}" a été vendue !`,
             priority: 'normal',
             relatedItemId: announcement.documentId,
@@ -75,7 +75,7 @@ export default {
         if (sellerId) {
           await strapi.service('api::notification.notification').createNotification(sellerId, {
             type: 'announcement_expiring',
-            title: 'Annonce expirée ⏰',
+            title: 'Annonce expirée',
             body: `Votre annonce "${announcement.title}" a expiré et n'est plus visible.`,
             priority: 'low',
             relatedItemId: announcement.documentId,
@@ -93,7 +93,7 @@ export default {
         if (sellerId) {
           await strapi.service('api::notification.notification').createNotification(sellerId, {
             type: 'announcement_deleted',
-            title: '🗑️ Annonce supprimée',
+            title: 'Annonce supprimée',
             body: `Votre annonce "${announcement.title}" a été supprimée.`,
             priority: 'normal',
             relatedItemId: announcement.documentId,
@@ -111,7 +111,7 @@ export default {
         if (sellerId) {
           await strapi.service('api::notification.notification').createNotification(sellerId, {
             type: 'announcement_moderated',
-            title: '🚫 Annonce rejetée',
+            title: 'Annonce rejetée',
             body: `Votre annonce "${announcement.title}" a été rejetée par la modération.`,
             priority: 'high',
             relatedItemId: announcement.documentId,
@@ -142,7 +142,7 @@ export default {
         if (sellerId) {
           await strapi.service('api::notification.notification').createNotification(sellerId, {
             type: 'announcement_deleted',
-            title: '🗑️ Annonce supprimée',
+            title: 'Annonce supprimée',
             body: `Votre annonce "${result.title || 'Sans titre'}" a été supprimée.`,
             priority: 'normal',
             relatedItemId: result.documentId,

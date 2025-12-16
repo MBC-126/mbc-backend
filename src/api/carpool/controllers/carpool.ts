@@ -187,7 +187,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
             carpool.driver.id,
             {
               type: 'carpool_passenger_left',
-              title: '👋 Passager a quitté',
+              title: 'Passager a quitté',
               body: `${userName} a quitté votre covoiturage ${departureInfo}.`,
               priority: 'normal',
               relatedItemId: carpoolId.toString(),
@@ -392,6 +392,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
         const departureInfo = `${carpool.departureLocation} → ${carpool.arrivalLocation}`;
         const departureTime = carpool.departureTime
           ? new Date(carpool.departureTime).toLocaleString('fr-FR', {
+              timeZone: 'Europe/Paris',
               day: 'numeric',
               month: 'long',
               hour: '2-digit',
@@ -403,7 +404,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
           userId,
           {
             type: 'carpool_passenger_removed',
-            title: '🚫 Retiré du covoiturage',
+            title: 'Retiré du covoiturage',
             body: `Vous avez été retiré du covoiturage ${departureInfo}${departureTime ? ' du ' + departureTime : ''}.`,
             priority: 'normal',
             relatedItemId: carpoolId.toString(),
@@ -750,6 +751,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
       const departureInfo = `${carpool.departureLocation} → ${carpool.arrivalLocation}`;
       const departureTime = carpool.departureTime
         ? new Date(carpool.departureTime).toLocaleString('fr-FR', {
+            timeZone: 'Europe/Paris',
             hour: '2-digit',
             minute: '2-digit'
           })
@@ -766,7 +768,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
         allParticipantIds,
         {
           type: 'carpool_reminder',
-          title: `🚗 Départ dans 1h !`,
+          title: 'Départ dans 1h',
           body: `Rappel: Covoiturage ${departureInfo} à ${departureTime}`,
           priority: 'high',
           relatedItemId: carpoolId.toString(),

@@ -64,6 +64,10 @@
     "isActive": {
       "type": "boolean",
       "default": true
+    },
+    "iconKey": {
+      "type": "string",
+      "default": "Buildings"
     }
   }
 }
