@@ -101,6 +101,7 @@ export class FirebaseChatService {
         ],
         title: title || `Conversation`,
         createdAt: FieldValue.serverTimestamp(),
+        lastMessageTime: FieldValue.serverTimestamp(),
         ...(relatedItemId && { relatedItemId }),
         ...(relatedItemType && { relatedItemType })
       };
@@ -193,7 +194,7 @@ export class FirebaseChatService {
       const recipientId = conversationData.participants.find((id: number) => id !== senderId);
 
       if (recipientId) {
-        await this.sendMessageNotification(recipientId, senderName, text, conversationData.title);
+        await this.sendMessageNotification(recipientId, senderName, text, conversationData.title, conversationId);
       }
 
       return messageRef.id;
@@ -303,16 +304,18 @@ export class FirebaseChatService {
     recipientId: number,
     senderName: string,
     messageText: string,
-    conversationTitle: string
+    conversationTitle: string,
+    conversationId: string
   ): Promise<void> {
     try {
       await strapi.service('api::notification.notification').createNotification(recipientId, {
-        type: 'carpool_message', // ou announcement_message selon le type
+        type: 'chat_message',
         title: `${senderName}`,
         body: messageText.length > 100 ? messageText.substring(0, 97) + '...' : messageText,
         priority: 'high',
         relatedItemType: 'conversation',
-        data: { conversationTitle }
+        relatedItemId: conversationId,
+        data: { conversationTitle, conversationId }
       });
     } catch (error) {
       console.error('❌ Erreur sendMessageNotification:', error);
