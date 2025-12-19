@@ -136,7 +136,10 @@ export class FCMService {
               }
             },
             android: {
-              collapse_key: payload.collapseKey || 'default'
+              collapse_key: payload.collapseKey || 'default',
+              notification: {
+                channel_id: payload.data?.priority === 'urgent' ? 'urgent' : 'default'
+              }
             }
           }
         };
