@@ -546,7 +546,8 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
   async findToRemind(ctx) {
     try {
       const { windowMinutes = '2', reminderType = '1h-before' } = ctx.query;
-      const window = parseInt(windowMinutes as string);
+      // Limite sécurisée pour éviter DoS (max 60 minutes)
+      const window = Math.min(Math.max(1, parseInt(windowMinutes as string) || 2), 60);
 
       const now = new Date();
       const targetTime = new Date(now.getTime() + 60 * 60 * 1000); // +1h

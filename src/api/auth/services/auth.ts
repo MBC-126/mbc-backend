@@ -9,8 +9,11 @@ if (!STATE_SECRET) {
 }
 const STATE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-// Build ProConnect base URL from env; fallback to integ01 for dev
-const envDomain = process.env.PROCONNECT_DOMAIN || 'fca.integ01.dev-agentconnect.fr';
+// Build ProConnect base URL from env - REQUIRED in production
+const envDomain = process.env.PROCONNECT_DOMAIN;
+if (!envDomain) {
+  throw new Error('PROCONNECT_DOMAIN doit être défini (ex: fca.integ01.dev-agentconnect.fr pour dev, agent-connect.gouv.fr pour prod)');
+}
 const baseUrl = envDomain.startsWith('http') ? envDomain : `https://${envDomain}`;
 
 const PROCONNECT_JWKS_URI = `${baseUrl}/api/v2/jwks`;

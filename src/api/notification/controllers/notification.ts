@@ -25,10 +25,13 @@ export default factories.createCoreController('api::notification.notification' a
       filters.type = type;
     }
 
+    // Limite sécurisée pour éviter DoS (max 100)
+    const safeLimit = Math.min(Math.max(1, parseInt(limit) || 50), 100);
+
     const notifications = await strapi.db.query('api::notification.notification').findMany({
       where: filters,
       orderBy: { createdAt: 'desc' },
-      limit: parseInt(limit),
+      limit: safeLimit,
       populate: ['user']
     });
 

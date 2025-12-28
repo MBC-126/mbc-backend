@@ -9,15 +9,23 @@ export default factories.createCoreController('api::announcement.announcement' a
       return ctx.unauthorized('Utilisateur non authentifié');
     }
 
-    console.log('📸 CREATE - Fichiers reçus:', ctx.request.files);
-    console.log('📦 CREATE - Body reçu:', JSON.stringify(ctx.request.body, null, 2));
-
     if (typeof ctx.request.body.data === 'string') {
       ctx.request.body.data = JSON.parse(ctx.request.body.data);
     }
 
+    // Whitelist des champs autorisés (protection mass assignment)
+    const allowedFields = ['title', 'description', 'category', 'price', 'images', 'location', 'contactPhone', 'contactEmail'];
+    const inputData = ctx.request.body.data || {};
+    const sanitizedData: Record<string, any> = {};
+
+    for (const field of allowedFields) {
+      if (inputData[field] !== undefined) {
+        sanitizedData[field] = inputData[field];
+      }
+    }
+
     const dataWithSeller = {
-      ...ctx.request.body.data,
+      ...sanitizedData,
       seller: user.id
     };
 
@@ -177,7 +185,8 @@ export default factories.createCoreController('api::announcement.announcement' a
   async findExpiring(ctx: any) {
     try {
       const { days } = ctx.query;
-      const daysAhead = parseInt(days) || 3;
+      // Limite sécurisée pour éviter DoS (max 30 jours)
+      const daysAhead = Math.min(Math.max(1, parseInt(days) || 3), 30);
 
       const targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + daysAhead);

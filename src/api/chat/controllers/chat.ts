@@ -91,7 +91,9 @@ export default {
         return ctx.forbidden('Vous n\'êtes pas participant de cette conversation');
       }
 
-      const messages = await chatService.getMessages(conversationId, parseInt(limit));
+      // Limite sécurisée pour éviter DoS (max 100)
+      const safeLimit = Math.min(Math.max(1, parseInt(limit) || 50), 100);
+      const messages = await chatService.getMessages(conversationId, safeLimit);
 
       return ctx.send(messages);
     } catch (error: any) {
