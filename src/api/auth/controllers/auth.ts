@@ -10,6 +10,21 @@ export default ({ strapi }) => ({
     return { message: 'OK, API custom en TypeScript bien chargée !' };
   },
 
+  /**
+   * Génère un state OAuth signé pour l'authentification ProConnect
+   * GET /api/auth/proconnect/state
+   */
+  async generateState(ctx) {
+    try {
+      // @ts-ignore
+      const state = strapi.service('api::auth.auth').generateOAuthState();
+      return { state };
+    } catch (err) {
+      console.error('Erreur génération state:', err?.message || err);
+      return ctx.internalServerError('Erreur lors de la génération du state');
+    }
+  },
+
   async proconnectLogin(ctx) {
     const { id_token, access_token } = ctx.request.body as {
       id_token: string;
@@ -29,11 +44,7 @@ export default ({ strapi }) => ({
       // @ts-ignore
       const decodedToken = await strapi.service('api::auth.auth').validateProConnectToken(id_token);
 
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 ID TOKEN DECODED (proconnectLogin)');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(JSON.stringify(decodedToken, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      // Token decoded successfully (details hidden for security)
 
       // 2. Récupérer et décoder le userinfo
       const userinfoResponse = await axios.get(
@@ -45,13 +56,7 @@ export default ({ strapi }) => ({
         }
       );
 
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 USERINFO ENDPOINT RESPONSE (proconnectLogin)');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('Status:', userinfoResponse.status);
-      console.log('Content-Type:', userinfoResponse.headers['content-type']);
-      console.log('Raw Data:', JSON.stringify(userinfoResponse.data, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      // Userinfo received (status: ${userinfoResponse.status})
 
       let userInfo: any;
       const contentType = userinfoResponse.headers['content-type'] || '';
@@ -60,10 +65,8 @@ export default ({ strapi }) => ({
       if (contentType.includes('application/jwt') || typeof userinfoResponse.data === 'string') {
         // @ts-ignore
         userInfo = await strapi.service('api::auth.auth').validateProConnectToken(userinfoResponse.data);
-        console.log('UserInfo après décodage JWT:', JSON.stringify(userInfo, null, 2));
       } else {
         userInfo = userinfoResponse.data;
-        console.log('UserInfo (JSON direct):', JSON.stringify(userInfo, null, 2));
       }
 
       // 4. Fusionner les données
@@ -72,11 +75,7 @@ export default ({ strapi }) => ({
         ...userInfo,
       };
 
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 COMPLETE USER DATA (proconnectLogin - après fusion)');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(JSON.stringify(completeUserData, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      // User data merged successfully
 
       // 5. Créer ou récupérer l'utilisateur
       const user = await strapi.service('api::auth.auth').findOrCreateUser(completeUserData);
@@ -126,21 +125,17 @@ export default ({ strapi }) => ({
       return ctx.badRequest('Le paramètre "code" est manquant.');
     }
 
+    // Validation du state OAuth (protection CSRF)
+    // @ts-ignore
+    const stateValidation = strapi.service('api::auth.auth').validateOAuthState(state as string);
+    if (!stateValidation.valid) {
+      console.error('❌ State OAuth invalide:', stateValidation.error);
+      const errorMessage = encodeURIComponent(stateValidation.error || 'State OAuth invalide');
+      return ctx.redirect(`mabase://auth/callback?error=${errorMessage}`);
+    }
+
     try {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📥 ProConnect Callback Received (Backend)');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📝 Code:', code.substring(0, 20) + '...');
-      console.log('🔐 State:', state);
-      console.log('');
-      console.log('🔍 ProConnect Configuration (Backend):');
-      console.log('🌐 Domain:', process.env.PROCONNECT_DOMAIN || 'NOT SET');
-      console.log('🔗 Base URL:', PROCONNECT_BASE_URL);
-      console.log('🔗 Token Endpoint:', `${PROCONNECT_BASE_URL}/api/v2/token`);
-      console.log('🆔 Client ID:', process.env.PROCONNECT_CLIENT_ID || 'NOT SET');
-      console.log('🔑 Client Secret:', process.env.PROCONNECT_CLIENT_SECRET ? process.env.PROCONNECT_CLIENT_SECRET.substring(0, 10) + '...' : 'NOT SET');
-      console.log('📍 Redirect URI:', process.env.PROCONNECT_REDIRECT_URI_HTTPS || 'NOT SET');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      // ProConnect callback received - State validé
 
       // 1. Échanger le code contre les tokens
       const tokenParams = {
@@ -150,15 +145,6 @@ export default ({ strapi }) => ({
         client_id: process.env.PROCONNECT_CLIENT_ID,
         client_secret: process.env.PROCONNECT_CLIENT_SECRET,
       };
-
-      console.log('');
-      console.log('🔑 Token Exchange Request:');
-      console.log('  grant_type:', tokenParams.grant_type);
-      console.log('  redirect_uri:', tokenParams.redirect_uri);
-      console.log('  client_id:', tokenParams.client_id);
-      console.log('  client_secret:', tokenParams.client_secret?.substring(0, 10) + '...');
-      console.log('  code:', tokenParams.code?.substring(0, 20) + '...');
-      console.log('  Full token_endpoint:', `${PROCONNECT_BASE_URL}/api/v2/token`);
 
       const tokenResponse = await axios.post(
         `${PROCONNECT_BASE_URL}/api/v2/token`,
@@ -176,17 +162,9 @@ export default ({ strapi }) => ({
         throw new Error('Tokens manquants dans la réponse ProConnect');
       }
 
-      console.log('✅ Tokens received from ProConnect');
-
       // 2. Valider l'id_token
       // @ts-ignore
       const decodedToken = await strapi.service('api::auth.auth').validateProConnectToken(id_token);
-
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 ID TOKEN DECODED');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(JSON.stringify(decodedToken, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // 3. Récupérer le userinfo
       const userinfoResponse = await axios.get(
@@ -198,24 +176,14 @@ export default ({ strapi }) => ({
         }
       );
 
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 USERINFO ENDPOINT RESPONSE');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('Status:', userinfoResponse.status);
-      console.log('Content-Type:', userinfoResponse.headers['content-type']);
-      console.log('Raw Data:', JSON.stringify(userinfoResponse.data, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
       let userInfo: any;
       const contentType = userinfoResponse.headers['content-type'] || '';
 
       if (contentType.includes('application/jwt') || typeof userinfoResponse.data === 'string') {
         // @ts-ignore
         userInfo = await strapi.service('api::auth.auth').validateProConnectToken(userinfoResponse.data);
-        console.log('UserInfo après décodage JWT:', JSON.stringify(userInfo, null, 2));
       } else {
         userInfo = userinfoResponse.data;
-        console.log('UserInfo (JSON direct):', JSON.stringify(userInfo, null, 2));
       }
 
       // 4. Fusionner les données
@@ -223,12 +191,6 @@ export default ({ strapi }) => ({
         ...decodedToken,
         ...userInfo,
       };
-
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🔍 COMPLETE USER DATA (après fusion)');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(JSON.stringify(completeUserData, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // 5. Créer ou récupérer l'utilisateur
       const user = await strapi.service('api::auth.auth').findOrCreateUser(completeUserData);
@@ -244,8 +206,6 @@ export default ({ strapi }) => ({
       const strapiJwt = strapi.plugins['users-permissions'].services.jwt.issue({
         id: user.id,
       });
-
-      console.log('✅ User authenticated, redirecting to app...');
 
       // 8. Encoder les données pour le deep link
       const userData = encodeURIComponent(JSON.stringify({
@@ -280,7 +240,6 @@ export default ({ strapi }) => ({
    * Callback logout ProConnect
    */
   async proconnectLogoutCallback(ctx) {
-    console.log('📤 ProConnect logout callback received');
     // Rediriger vers l'app mobile
     ctx.redirect('mabase://post-logout');
   },

@@ -4,17 +4,13 @@ export default {
       method: 'POST',
       path: '/devices/register',
       handler: 'device-token.register',
-      config: {
-        policies: []
-      }
+      // Authentification requise par défaut
     },
     {
       method: 'POST',
       path: '/devices/unregister',
       handler: 'device-token.unregister',
-      config: {
-        policies: []
-      }
+      // Authentification requise par défaut
     }
   ]
 };

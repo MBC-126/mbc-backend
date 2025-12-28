@@ -4,24 +4,20 @@ export default {
       method: 'GET',
       path: '/daily-menus',
       handler: 'daily-menu.find',
-      config: {
-        auth: false
-      }
+      // Authentification requise
     },
     {
       method: 'GET',
       path: '/daily-menus/:id',
       handler: 'daily-menu.findOne',
-      config: {
-        auth: false
-      }
+      // Authentification requise
     },
     {
       method: 'POST',
       path: '/daily-menus',
       handler: 'daily-menu.create',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },
@@ -30,7 +26,7 @@ export default {
       path: '/daily-menus/:id',
       handler: 'daily-menu.update',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },
@@ -39,7 +35,7 @@ export default {
       path: '/daily-menus/:id',
       handler: 'daily-menu.delete',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     }

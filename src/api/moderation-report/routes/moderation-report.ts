@@ -4,18 +4,14 @@ export default {
       method: 'POST',
       path: '/moderation-reports',
       handler: 'api::moderation-report.moderation-report.create',
-      config: {
-        policies: [],
-        middlewares: [],
-      },
+      // Tout utilisateur authentifié peut créer un signalement
     },
     {
       method: 'GET',
       path: '/moderation-reports',
       handler: 'api::moderation-report.moderation-report.find',
       config: {
-        policies: [],
-        middlewares: [],
+        policies: ['global::is-moderator'],
       },
     },
     {
@@ -23,8 +19,7 @@ export default {
       path: '/moderation-reports/:id',
       handler: 'api::moderation-report.moderation-report.findOne',
       config: {
-        policies: [],
-        middlewares: [],
+        policies: ['global::is-moderator'],
       },
     },
     {
@@ -32,8 +27,7 @@ export default {
       path: '/moderation-reports/:id',
       handler: 'api::moderation-report.moderation-report.update',
       config: {
-        policies: [],
-        middlewares: [],
+        policies: ['global::is-moderator'],
       },
     },
     {
@@ -41,8 +35,7 @@ export default {
       path: '/moderation-reports/:id',
       handler: 'api::moderation-report.moderation-report.delete',
       config: {
-        policies: [],
-        middlewares: [],
+        policies: ['global::is-moderator'],
       },
     },
   ],

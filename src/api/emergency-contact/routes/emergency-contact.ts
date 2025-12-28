@@ -4,17 +4,13 @@ export default {
       method: 'GET',
       path: '/emergency-contacts',
       handler: 'emergency-contact.find',
-      config: {
-        auth: false
-      }
+      // Authentification requise - données sensibles
     },
     {
       method: 'GET',
       path: '/emergency-contacts/:id',
       handler: 'emergency-contact.findOne',
-      config: {
-        auth: false
-      }
+      // Authentification requise - données sensibles
     }
   ]
 };

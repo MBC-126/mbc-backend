@@ -5,7 +5,7 @@ export default {
       path: '/moderation/queue',
       handler: 'api::moderation.moderation.queue',
       config: {
-        policies: [],
+        policies: ['global::is-moderator'],
         middlewares: []
       }
     },
@@ -14,7 +14,7 @@ export default {
       path: '/moderation/:reportId/keep',
       handler: 'api::moderation.moderation.keep',
       config: {
-        policies: [],
+        policies: ['global::is-moderator'],
         middlewares: []
       }
     },
@@ -23,7 +23,7 @@ export default {
       path: '/moderation/:reportId/remove',
       handler: 'api::moderation.moderation.remove',
       config: {
-        policies: [],
+        policies: ['global::is-moderator'],
         middlewares: []
       }
     }

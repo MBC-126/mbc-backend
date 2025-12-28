@@ -1,5 +1,13 @@
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
+import crypto from 'crypto';
+
+// OAuth State management - SECRET OBLIGATOIRE
+const STATE_SECRET = process.env.OAUTH_STATE_SECRET || process.env.APP_KEYS?.split(',')[0];
+if (!STATE_SECRET) {
+  throw new Error('OAUTH_STATE_SECRET ou APP_KEYS doit être défini pour la sécurité OAuth');
+}
+const STATE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // Build ProConnect base URL from env; fallback to integ01 for dev
 const envDomain = process.env.PROCONNECT_DOMAIN || 'fca.integ01.dev-agentconnect.fr';
@@ -10,17 +18,10 @@ const EXPECTED_ISSUER = `${baseUrl}/api/v2`;
 const EXPECTED_AUDIENCE = process.env.PROCONNECT_CLIENT_ID;
 const EXPECTED_ALG = (process.env.OIDC_EXPECTED_ALG || 'RS256') as jwt.Algorithm;
 
-// Log configuration at startup
-console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('🔐 ProConnect Service Configuration');
-console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('🌐 Domain:', envDomain);
-console.log('🔗 Base URL:', baseUrl);
-console.log('🔗 JWKS URI:', PROCONNECT_JWKS_URI);
-console.log('🆔 Expected Audience (Client ID):', EXPECTED_AUDIENCE || 'NOT SET');
-console.log('🔒 Expected Issuer:', EXPECTED_ISSUER);
-console.log('🔐 Expected Algorithm:', EXPECTED_ALG);
-console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+// Validate configuration at startup (no sensitive data logging)
+if (!EXPECTED_AUDIENCE) {
+  console.warn('ProConnect: PROCONNECT_CLIENT_ID non défini');
+}
 
 const client = jwksClient({
   jwksUri: PROCONNECT_JWKS_URI,
@@ -64,18 +65,7 @@ const validateProConnectToken = (token: string): Promise<jwt.JwtPayload> => {
 };
 
 const findOrCreateUser = async (decodedToken: jwt.JwtPayload) => {
-  console.log('=== CREATION/RECUPERATION UTILISATEUR ===');
-  console.log(JSON.stringify(decodedToken, null, 2));
-  console.log('========================================');
-
   const { email, sub, usual_name, given_name } = decodedToken as any;
-
-  console.log('Données extraites:', {
-    email,
-    sub,
-    usual_name,
-    given_name,
-  });
 
   if (!email) {
     console.error('ATTENTION : Aucun email fourni !');
@@ -88,8 +78,6 @@ const findOrCreateUser = async (decodedToken: jwt.JwtPayload) => {
   });
 
   if (!user) {
-    console.log('Utilisateur non trouvé, création en cours...');
-
     // @ts-ignore
     const defaultRole = await strapi.query('plugin::users-permissions.role').findOne({
       where: { type: 'authenticated' },
@@ -105,27 +93,76 @@ const findOrCreateUser = async (decodedToken: jwt.JwtPayload) => {
       firstName: given_name,
       lastName: usual_name,
     });
-
-    console.log('Utilisateur créé avec succès:', {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    });
-  } else {
-    console.log('Utilisateur existant trouvé:', {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-    });
   }
 
   return user;
 };
 
+/**
+ * Génère un state OAuth signé avec timestamp
+ * Format: timestamp.randomBytes.signature
+ */
+const generateOAuthState = (): string => {
+  const timestamp = Date.now().toString();
+  const random = crypto.randomBytes(16).toString('hex');
+  const data = `${timestamp}.${random}`;
+  const signature = crypto
+    .createHmac('sha256', STATE_SECRET)
+    .update(data)
+    .digest('hex');
+  return `${data}.${signature}`;
+};
+
+/**
+ * Valide un state OAuth
+ * Vérifie la signature et que le timestamp n'est pas expiré
+ */
+const validateOAuthState = (state: string): { valid: boolean; error?: string } => {
+  if (!state) {
+    return { valid: false, error: 'State manquant' };
+  }
+
+  const parts = state.split('.');
+  if (parts.length !== 3) {
+    return { valid: false, error: 'Format de state invalide' };
+  }
+
+  const [timestamp, random, signature] = parts;
+  const data = `${timestamp}.${random}`;
+
+  // Vérifier la signature (timing-safe comparison)
+  const expectedSignature = crypto
+    .createHmac('sha256', STATE_SECRET)
+    .update(data)
+    .digest('hex');
+
+  const isValidSignature = crypto.timingSafeEqual(
+    Buffer.from(signature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
+
+  if (!isValidSignature) {
+    return { valid: false, error: 'Signature de state invalide' };
+  }
+
+  // Vérifier l'expiration
+  const stateTime = parseInt(timestamp, 10);
+  if (isNaN(stateTime)) {
+    return { valid: false, error: 'Timestamp invalide' };
+  }
+
+  const now = Date.now();
+  if (now - stateTime > STATE_TTL_MS) {
+    return { valid: false, error: 'State expiré' };
+  }
+
+  return { valid: true };
+};
+
 export default ({ strapi }) => ({
   validateProConnectToken,
   findOrCreateUser,
+  generateOAuthState,
+  validateOAuthState,
 });
 

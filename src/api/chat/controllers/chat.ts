@@ -82,6 +82,15 @@ export default {
 
     try {
       const chatService = new FirebaseChatService(getFirebaseAdmin());
+
+      // Vérifier que l'utilisateur est participant de cette conversation
+      const conversations = await chatService.getUserConversations(user.id);
+      const isParticipant = conversations.some((conv: any) => conv.id === conversationId);
+
+      if (!isParticipant) {
+        return ctx.forbidden('Vous n\'êtes pas participant de cette conversation');
+      }
+
       const messages = await chatService.getMessages(conversationId, parseInt(limit));
 
       return ctx.send(messages);
@@ -111,6 +120,15 @@ export default {
 
     try {
       const chatService = new FirebaseChatService(getFirebaseAdmin());
+
+      // Vérifier que l'utilisateur est participant de cette conversation
+      const conversations = await chatService.getUserConversations(user.id);
+      const isParticipant = conversations.some((conv: any) => conv.id === conversationId);
+
+      if (!isParticipant) {
+        return ctx.forbidden('Vous n\'êtes pas participant de cette conversation');
+      }
+
       const messageId = await chatService.sendMessage(conversationId, user.id, text);
 
       return ctx.send({
@@ -137,6 +155,15 @@ export default {
 
     try {
       const chatService = new FirebaseChatService(getFirebaseAdmin());
+
+      // Vérifier que l'utilisateur est participant de cette conversation
+      const conversations = await chatService.getUserConversations(user.id);
+      const isParticipant = conversations.some((conv: any) => conv.id === conversationId);
+
+      if (!isParticipant) {
+        return ctx.forbidden('Vous n\'êtes pas participant de cette conversation');
+      }
+
       await chatService.markMessagesAsRead(conversationId, user.id);
 
       return ctx.send({

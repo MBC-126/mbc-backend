@@ -36,7 +36,7 @@ export default {
       method: 'GET',
       path: '/infrastructures/:id/blackouts',
       handler: 'infrastructure.getBlackouts',
-      config: { auth: false } // Accessible à tous pour voir les indisponibilités
+      // Authentification requise
     },
     {
       method: 'DELETE',

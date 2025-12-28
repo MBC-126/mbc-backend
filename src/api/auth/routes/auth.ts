@@ -7,6 +7,12 @@ export default {
       config: { auth: false },
     },
     {
+      method: 'GET',
+      path: '/auth/proconnect/state',
+      handler: 'auth.generateState',
+      config: { auth: false },
+    },
+    {
       method: 'POST',
       path: '/auth/proconnect',
       handler: 'auth.proconnectLogin',

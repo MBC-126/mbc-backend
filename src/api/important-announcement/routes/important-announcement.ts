@@ -4,24 +4,20 @@ export default {
       method: 'GET',
       path: '/important-announcements',
       handler: 'important-announcement.find',
-      config: {
-        auth: false
-      }
+      // Authentification requise
     },
     {
       method: 'GET',
       path: '/important-announcements/:id',
       handler: 'important-announcement.findOne',
-      config: {
-        auth: false
-      }
+      // Authentification requise
     },
     {
       method: 'POST',
       path: '/important-announcements',
       handler: 'important-announcement.create',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },
@@ -30,7 +26,7 @@ export default {
       path: '/important-announcements/:id',
       handler: 'important-announcement.update',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },
@@ -39,7 +35,7 @@ export default {
       path: '/important-announcements/:id',
       handler: 'important-announcement.delete',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },

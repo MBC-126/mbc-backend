@@ -476,6 +476,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
 
   /**
    * Récupérer les passagers d'un covoiturage avec leurs statuts
+   * Seul le conducteur ou un passager du covoiturage peut voir la liste
    */
   async getPassengers(ctx) {
     const { id: carpoolId } = ctx.params;
@@ -486,6 +487,32 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
     }
 
     try {
+      // Récupérer le covoiturage avec le conducteur
+      const carpool = await strapi.db.query('api::carpool.carpool').findOne({
+        where: { id: carpoolId },
+        populate: ['driver'],
+      });
+
+      if (!carpool) {
+        return ctx.notFound('Covoiturage introuvable.');
+      }
+
+      // Vérifier que l'utilisateur est le conducteur ou un passager
+      const isDriver = carpool.driver?.id === user.id;
+
+      const userAsPassenger = await strapi.db.query('api::carpool-passenger.carpool-passenger').findOne({
+        where: {
+          carpool: carpoolId,
+          passenger: user.id,
+        },
+      });
+
+      const isPassenger = !!userAsPassenger;
+
+      if (!isDriver && !isPassenger) {
+        return ctx.forbidden('Vous n\'êtes pas autorisé à voir les passagers de ce covoiturage.');
+      }
+
       const passengers = await strapi.db.query('api::carpool-passenger.carpool-passenger').findMany({
         where: { carpool: carpoolId },
         populate: ['passenger'],
@@ -507,7 +534,7 @@ export default factories.createCoreController('api::carpool.carpool', ({ strapi 
         passengers: formatted,
       };
     } catch (error) {
-      console.error('❌ Erreur getPassengers:', error);
+      console.error('Erreur getPassengers:', error);
       return ctx.badRequest('Erreur lors de la récupération des passagers.');
     }
   },

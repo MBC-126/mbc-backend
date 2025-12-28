@@ -1,4 +1,13 @@
 export default ({ env }) => ({
+  // Configuration JWT pour l'authentification
+  'users-permissions': {
+    config: {
+      jwt: {
+        expiresIn: '24h', // Les tokens expirent après 24 heures
+      },
+    },
+  },
+
   upload: {
     config: {
       provider: 'aws-s3',

@@ -4,24 +4,20 @@ export default {
       method: 'GET',
       path: '/events',
       handler: 'event.find',
-      config: {
-        auth: false
-      }
+      // Authentification requise
     },
     {
       method: 'GET',
       path: '/events/:id',
       handler: 'event.findOne',
-      config: {
-        auth: false
-      }
+      // Authentification requise
     },
     {
       method: 'POST',
       path: '/events',
       handler: 'event.create',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },
@@ -30,7 +26,7 @@ export default {
       path: '/events/:id',
       handler: 'event.update',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     },
@@ -39,7 +35,7 @@ export default {
       path: '/events/:id',
       handler: 'event.delete',
       config: {
-        policies: [],
+        policies: ['global::is-app-admin'],
         middlewares: []
       }
     }
