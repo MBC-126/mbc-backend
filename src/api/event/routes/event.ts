@@ -38,6 +38,34 @@ export default {
         policies: ['global::is-app-admin'],
         middlewares: []
       }
+    },
+    // ========== Routes n8n (API token) ==========
+    {
+      method: 'POST',
+      path: '/n8n/events',
+      handler: 'event.create',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
+    },
+    {
+      method: 'PUT',
+      path: '/n8n/events/:id',
+      handler: 'event.update',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
+    },
+    {
+      method: 'DELETE',
+      path: '/n8n/events/:id',
+      handler: 'event.delete',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
     }
   ]
 };

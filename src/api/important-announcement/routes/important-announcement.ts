@@ -54,6 +54,34 @@ export default {
       config: {
         policies: ['global::require-api-token']
       }
+    },
+    // ========== Routes n8n (API token) ==========
+    {
+      method: 'POST',
+      path: '/n8n/important-announcements',
+      handler: 'important-announcement.create',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
+    },
+    {
+      method: 'PUT',
+      path: '/n8n/important-announcements/:id',
+      handler: 'important-announcement.update',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
+    },
+    {
+      method: 'DELETE',
+      path: '/n8n/important-announcements/:id',
+      handler: 'important-announcement.delete',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
     }
   ]
 };
