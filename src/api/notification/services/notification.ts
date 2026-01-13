@@ -112,6 +112,15 @@ export default factories.createCoreService('api::notification.notification' as a
 
       console.log(`📱 ${deviceTokens.length} device token(s) trouvé(s) pour user ${userId}`);
 
+      let badgeCount: number | undefined;
+      try {
+        badgeCount = await strapi.db.query('api::notification.notification').count({
+          where: { user: userId, read: false }
+        });
+      } catch (error) {
+        console.warn(`⚠️ Impossible de calculer le badge pour user ${userId}:`, error);
+      }
+
       const tokens = deviceTokens.map(dt => dt.token);
       const fcmService = getFCMService();
 
@@ -119,6 +128,7 @@ export default factories.createCoreService('api::notification.notification' as a
       const payload = {
         title: notification.title,
         body: notification.body || '',
+        badge: badgeCount,
         data: {
           notificationId: notification.id.toString(),
           type: notification.type,

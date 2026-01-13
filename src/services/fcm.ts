@@ -5,6 +5,7 @@ interface PushPayload {
   body: string;
   data?: Record<string, string>;
   collapseKey?: string;
+  badge?: number;
 }
 
 /**
@@ -78,7 +79,8 @@ export class FCMService {
       data: payload.data || {},
       sound: 'default',
       priority: 'high',
-      channelId: payload.data?.type === 'urgent' ? 'urgent' : 'default'
+      channelId: payload.data?.type === 'urgent' ? 'urgent' : 'default',
+      ...(typeof payload.badge === 'number' ? { badge: payload.badge } : {})
     }));
 
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -122,6 +124,20 @@ export class FCMService {
 
     const results = await Promise.allSettled(
       tokens.map(async (token) => {
+        const apns: any = {
+          headers: {
+            'apns-collapse-id': payload.collapseKey || 'default'
+          }
+        };
+
+        if (typeof payload.badge === 'number') {
+          apns.payload = {
+            aps: {
+              badge: payload.badge
+            }
+          };
+        }
+
         const message = {
           message: {
             token,
@@ -130,11 +146,7 @@ export class FCMService {
               body: payload.body
             },
             data: payload.data || {},
-            apns: {
-              headers: {
-                'apns-collapse-id': payload.collapseKey || 'default'
-              }
-            },
+            apns,
             android: {
               collapse_key: payload.collapseKey || 'default',
               notification: {
