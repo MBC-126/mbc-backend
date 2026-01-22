@@ -25,12 +25,21 @@ export default {
       path: '/announcements/:id',
       handler: 'announcement.delete',
     },
-    // Route pour n8n
+    // ========== Routes n8n (API token) ==========
     {
       method: 'GET',
       path: '/announcements/expiring',
       handler: 'announcement.findExpiring',
       config: { auth: false, policies: ['global::require-api-token'] }
+    },
+    {
+      method: 'PUT',
+      path: '/n8n/announcements/:id',
+      handler: 'announcement.update',
+      config: {
+        auth: false,
+        policies: ['global::require-api-token']
+      }
     }
   ]
 };
