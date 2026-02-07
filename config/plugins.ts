@@ -3,7 +3,7 @@ export default ({ env }) => ({
   'users-permissions': {
     config: {
       jwt: {
-        expiresIn: '24h', // Les tokens expirent après 24 heures
+        expiresIn: '30d', // Les tokens expirent après 30 jours (mode "always logged on")
       },
     },
   },
