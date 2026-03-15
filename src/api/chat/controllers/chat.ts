@@ -103,9 +103,9 @@ export default {
   },
 
   /**
-   * Envoie un message
+   * Envoie un message (texte et/ou image)
    * POST /api/chat/conversations/:id/messages
-   * Body: { text }
+   * Body: { text?, imageUrl? }
    */
   async sendMessage(ctx: any) {
     const user = ctx.state.user;
@@ -114,10 +114,10 @@ export default {
     }
 
     const { id: conversationId } = ctx.params;
-    const { text } = ctx.request.body;
+    const { text, imageUrl } = ctx.request.body;
 
-    if (!text || text.trim() === '') {
-      return ctx.badRequest('Le message ne peut pas être vide');
+    if ((!text || text.trim() === '') && !imageUrl) {
+      return ctx.badRequest('Le message doit contenir du texte ou une image');
     }
 
     try {
@@ -131,7 +131,7 @@ export default {
         return ctx.forbidden('Vous n\'êtes pas participant de cette conversation');
       }
 
-      const messageId = await chatService.sendMessage(conversationId, user.id, text);
+      const messageId = await chatService.sendMessage(conversationId, user.id, text?.trim() || '', imageUrl);
 
       return ctx.send({
         messageId,

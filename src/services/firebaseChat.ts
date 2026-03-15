@@ -25,6 +25,7 @@ interface MessageData {
   senderId: number;
   senderName: string;
   text: string;
+  imageUrl?: string;
   createdAt: any;
   read: boolean;
 }
@@ -147,7 +148,8 @@ export class FirebaseChatService {
   async sendMessage(
     conversationId: string,
     senderId: number,
-    text: string
+    text: string,
+    imageUrl?: string
   ): Promise<string> {
     try {
       const conversationRef = this.db.collection('conversations').doc(conversationId);
@@ -173,7 +175,8 @@ export class FirebaseChatService {
       const messageData: MessageData = {
         senderId,
         senderName,
-        text,
+        text: text || (imageUrl ? '📷 Mettez l\'application à jour pour voir les photos' : ''),
+        ...(imageUrl && { imageUrl }),
         createdAt: FieldValue.serverTimestamp(),
         read: false
       };
@@ -182,8 +185,9 @@ export class FirebaseChatService {
       const messageRef = await messagesRef.add(messageData);
 
       // Mettre à jour la conversation avec le dernier message
+      const lastMessagePreview = text || (imageUrl ? '📷 Photo' : '');
       await conversationRef.update({
-        lastMessage: text,
+        lastMessage: lastMessagePreview,
         lastMessageTime: FieldValue.serverTimestamp()
       });
 
@@ -194,7 +198,8 @@ export class FirebaseChatService {
       const recipientId = conversationData.participants.find((id: number) => id !== senderId);
 
       if (recipientId) {
-        await this.sendMessageNotification(recipientId, senderName, text, conversationData.title, conversationId);
+        const notifBody = text || (imageUrl ? '📷 Photo' : '');
+        await this.sendMessageNotification(recipientId, senderName, notifBody, conversationData.title, conversationId);
       }
 
       return messageRef.id;

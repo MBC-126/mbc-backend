@@ -86,7 +86,9 @@ export default factories.createCoreService('api::notification.notification' as a
       'reservation_reminder': 'reservations',
       'menu_available': 'announcements',
       'emergency_alert': 'emergencyAlerts',
-      'important_announcement': 'announcements'
+      'important_announcement': 'announcements',
+      'new_announcement': 'announcements',
+      'new_carpool': 'carpooling'
     };
 
     return mapping[type] || null;

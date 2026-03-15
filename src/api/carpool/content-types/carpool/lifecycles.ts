@@ -23,7 +23,32 @@ export default {
       }
     }
 
-    // 2. Trigger webhook n8n pour rappel event-driven
+    // 2. Broadcast aux users avec carpooling=true (sauf le driver)
+    try {
+      const driverId = result.driver?.id || result.createdBy?.id;
+      const allUsers = await strapi.db.query('plugin::users-permissions.user').findMany({
+        select: ['id']
+      });
+      const targetIds = (allUsers as any[])
+        .filter((u: any) => u.id !== driverId)
+        .map((u: any) => u.id);
+
+      if (targetIds.length > 0) {
+        await strapi.service('api::notification.notification').createNotificationForUsers(targetIds, {
+          type: 'new_carpool',
+          title: '🚗 Nouveau covoiturage',
+          body: `${result.departureLocation} → ${result.arrivalLocation}`,
+          priority: 'normal',
+          relatedItemId: result.id?.toString(),
+          relatedItemType: 'carpool'
+        });
+        console.log(`✅ ${targetIds.length} utilisateurs notifiés du nouveau covoiturage`);
+      }
+    } catch (error) {
+      console.error('❌ Erreur notification nouveau covoiturage:', error);
+    }
+
+    // 3. Trigger webhook n8n pour rappel event-driven
     if (result.departureTime && !result.isRecurring) {
       const webhookUrl = process.env.N8N_WEBHOOK_URL;
       const webhookSecret = process.env.N8N_WEBHOOK_SECRET;

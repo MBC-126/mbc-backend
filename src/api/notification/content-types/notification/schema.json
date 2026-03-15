@@ -24,7 +24,9 @@
         "reservation_reminder",
         "menu_available",
         "emergency_alert",
-        "important_announcement"
+        "important_announcement",
+        "new_announcement",
+        "new_carpool"
       ],
       "required": true
     },
@@ -49,7 +51,7 @@
     },
     "relatedItemType": {
       "type": "enumeration",
-      "enum": ["announcement", "carpool", "reservation", "menu", "alert"]
+      "enum": ["announcement", "carpool", "reservation", "menu", "alert", "chat"]
     },
     "actionUrl": {
       "type": "string"

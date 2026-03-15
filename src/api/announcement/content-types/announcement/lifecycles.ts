@@ -17,6 +17,37 @@ export default {
   async afterCreate(event: any) {
     const { result } = event;
     console.log('✅ Nouvelle annonce créée:', result.documentId);
+
+    try {
+      // Récupérer le vendeur pour l'exclure de la notification
+      const announcement = await strapi.db.query('api::announcement.announcement').findOne({
+        where: { documentId: result.documentId },
+        populate: ['seller']
+      });
+      const authorId = announcement?.seller?.id;
+
+      // Récupérer tous les users avec announcements=true sauf l'auteur
+      const allUsers = await strapi.db.query('plugin::users-permissions.user').findMany({
+        select: ['id', 'notificationPreferences']
+      });
+      const targetIds = (allUsers as any[])
+        .filter((u: any) => u.id !== authorId && u.notificationPreferences?.announcements !== false)
+        .map((u: any) => u.id);
+
+      if (targetIds.length > 0) {
+        await strapi.service('api::notification.notification').createNotificationForUsers(targetIds, {
+          type: 'new_announcement',
+          title: '🛍️ Nouvelle annonce',
+          body: `"${result.title || 'Nouvelle annonce'}" vient d'être publiée.`,
+          priority: 'normal',
+          relatedItemId: result.documentId,
+          relatedItemType: 'announcement'
+        });
+        console.log(`✅ ${targetIds.length} utilisateurs notifiés de la nouvelle annonce`);
+      }
+    } catch (error) {
+      console.error('❌ Erreur notification nouvelle annonce:', error);
+    }
   },
 
   async afterUpdate(event: any) {
