@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "equipments",
+  "info": {
+    "singularName": "equipment",
+    "pluralName": "equipments",
+    "displayName": "Equipment",
+    "description": "Matériel détenu par les unités (don / prêt)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "category": {
+      "type": "string"
+    },
+    "condition": {
+      "type": "enumeration",
+      "enum": ["neuf", "bon", "usage"],
+      "default": "bon"
+    },
+    "mode": {
+      "type": "enumeration",
+      "enum": ["don", "pret", "both"],
+      "default": "pret",
+      "required": true
+    },
+    "quantity": {
+      "type": "integer",
+      "default": 1
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["disponible", "archive"],
+      "default": "disponible"
+    },
+    "ownerUnit": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::unit.unit"
+    },
+    "images": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": ["images"]
+    }
+  }
+}

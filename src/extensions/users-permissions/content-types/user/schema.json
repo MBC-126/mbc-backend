@@ -145,6 +145,16 @@
     "isAppAdmin": {
       "type": "boolean",
       "default": false
+    },
+    "assignedUnit": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::unit.unit",
+      "inversedBy": "members"
+    },
+    "isMaterielValidateur": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

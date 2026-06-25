@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "materiel_requests",
+  "info": {
+    "singularName": "materiel-request",
+    "pluralName": "materiel-requests",
+    "displayName": "Materiel Request",
+    "description": "Demandes de don / prêt de matériel"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "equipment": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::equipment.equipment"
+    },
+    "requester": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "requesterUnit": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::unit.unit"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["don", "pret"],
+      "required": true
+    },
+    "startDate": {
+      "type": "datetime"
+    },
+    "endDate": {
+      "type": "datetime"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["demande", "accepte", "refuse", "remis", "rendu", "annule"],
+      "default": "demande"
+    },
+    "message": {
+      "type": "text"
+    },
+    "decisionReason": {
+      "type": "text"
+    },
+    "conversationId": {
+      "type": "string"
+    }
+  }
+}

@@ -26,7 +26,10 @@
         "emergency_alert",
         "important_announcement",
         "new_announcement",
-        "new_carpool"
+        "new_carpool",
+        "materiel_request",
+        "materiel_accepted",
+        "materiel_rejected"
       ],
       "required": true
     },
@@ -51,7 +54,7 @@
     },
     "relatedItemType": {
       "type": "enumeration",
-      "enum": ["announcement", "carpool", "reservation", "menu", "alert", "chat"]
+      "enum": ["announcement", "carpool", "reservation", "menu", "alert", "chat", "materiel"]
     },
     "actionUrl": {
       "type": "string"
