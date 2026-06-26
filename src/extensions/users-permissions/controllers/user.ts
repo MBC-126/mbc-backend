@@ -1,28 +1,4 @@
 export default {
-  /**
-   * Surcharge de /api/users/me : peuple aussi `assignedUnit` (le `me` par défaut
-   * de users-permissions ne peuple que `role`), nécessaire pour le matériel
-   * (unité du validateur / propriétaire).
-   */
-  async me(ctx: any) {
-    const authUser = ctx.state.user;
-    if (!authUser) {
-      return ctx.unauthorized('Vous devez être connecté');
-    }
-    const user = await strapi.db.query('plugin::users-permissions.user').findOne({
-      where: { id: authUser.id },
-      populate: ['role', 'assignedUnit'],
-    });
-    if (!user) {
-      return ctx.notFound();
-    }
-    delete user.password;
-    delete user.resetPasswordToken;
-    delete user.confirmationToken;
-    delete user.fcmToken;
-    ctx.body = user;
-  },
-
   async registerFCMToken(ctx: any) {
     const user = ctx.state.user;
     if (!user) {
