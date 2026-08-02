@@ -1,5 +1,9 @@
 import { factories } from '@strapi/strapi';
 import { validateBooking } from '../../../services/booking-validator';
+import {
+  MAX_ACTIVE_RESERVATIONS,
+  isExemptFromReservationLimit,
+} from '../../../utils/booking-limits';
 
 export default factories.createCoreController('api::reservation.reservation' as any, ({ strapi }: any) => ({
   
@@ -52,16 +56,21 @@ export default factories.createCoreController('api::reservation.reservation' as 
       return ctx.unauthorized('Vous devez être connecté');
     }
 
-    // Vérifier que l'utilisateur n'a pas déjà 2 réservations actives
-    const userActiveReservations = await strapi.db.query('api::reservation.reservation').count({
-      where: {
-        user: user.id,
-        etatReservation: { $in: ['pending', 'confirmed'] }
-      }
-    });
+    // Vérifier le plafond de réservations actives
+    // Les gestionnaires d'infrastructures et les admins de l'app en sont dispensés
+    const isExempt = await isExemptFromReservationLimit(user.id);
 
-    if (userActiveReservations >= 2) {
-      return ctx.badRequest('Vous avez atteint le maximum de 2 créneaux réservables simultanément');
+    if (!isExempt) {
+      const userActiveReservations = await strapi.db.query('api::reservation.reservation').count({
+        where: {
+          user: user.id,
+          etatReservation: { $in: ['pending', 'confirmed'] }
+        }
+      });
+
+      if (userActiveReservations >= MAX_ACTIVE_RESERVATIONS) {
+        return ctx.badRequest(`Vous avez atteint le maximum de ${MAX_ACTIVE_RESERVATIONS} créneaux réservables simultanément`);
+      }
     }
 
     const { infrastructure, startTime, endTime, notes } = ctx.request.body.data;
